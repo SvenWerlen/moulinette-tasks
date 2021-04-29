@@ -11,16 +11,9 @@ init:
   - cmd: git config --global core.autocrlf true
 install:
   - echo "install"
-
 build_script:
   - echo "build"
 after_build:
   - echo "after"
-on_success:
-  - ps: Invoke-RestMethod $env:APPVEYOR_DISCORD_WEBHOOK_SCRIPT_URL -o send.ps1
-  - ps: ./send.ps1 success $env:DISCORD_URL
-on_failure:
-  - ps: Invoke-RestMethod $env:APPVEYOR_DISCORD_WEBHOOK_SCRIPT_URL -o send.ps1
-  - ps: ./send.ps1 failure $env:DISCORD_URL
-#on_finish:
-#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+on_finish:
+  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
