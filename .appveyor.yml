@@ -13,9 +13,10 @@ install:
   - echo "install"
   - sudo apt-get -y install blobfuse fuse
 build_script:
+  - sudo mount -t tmpfs -o size=16g tmpfs /mnt/blobfusetmp
   - sudo mkdir /mnt/blob
   - sudo chown appveyor /mnt/blob
-  - blobfuse /mnt/blob --tmp-path=/mnt/blobfusetmp -o attr_timeout=240 -o entry_timeout=240 -o negative_timeout=120 --file-cache-timeout-in-seconds=120
+  - blobfuse /mnt/blob --tmp-path=/mnt/blobfusetmp -o attr_timeout=240 -o entry_timeout=240 -o negative_timeout=120 --file-cache-timeout-in-seconds=120 --container-name=$AZURE_STORAGE_CONTAINER
 after_build:
   - echo "after"
 on_finish:
