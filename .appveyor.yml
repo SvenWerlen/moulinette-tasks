@@ -13,6 +13,8 @@ install:
   - echo "install"
   - sudo apt-get -y install blobfuse fuse
 build_script:
+  - sudo mkdir /mnt/blobfusetmp
+  - sudo chown appveyor /mnt/blobfusetmp
   - sudo mount -t tmpfs -o size=16g tmpfs /mnt/blobfusetmp
   - sudo mkdir /mnt/blob
   - sudo chown appveyor /mnt/blob
