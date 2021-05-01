@@ -12,6 +12,7 @@ init:
 install:
   - echo "install"
   - sudo apt-get -y install blobfuse fuse
+  - sudo apt-get -y install imagemagick
 build_script:
   - sudo mkdir /mnt/blobfusetmp
   - sudo chown appveyor /mnt/blobfusetmp
