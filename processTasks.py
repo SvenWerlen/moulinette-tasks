@@ -9,6 +9,7 @@ from time import time
 MOULINETTE_API = os.getenv('MOULINETTE_API')
 MOULINETTE_SECRET_KEY = os.getenv('MOULINETTE_SECRET')
 AZURE_MOUNT = os.getenv('AZURE_STORAGE_MOUNT')
+TMP = "/tmp/"
 
 # Check environment variables
 if not MOULINETTE_API or not MOULINETTE_SECRET_KEY:
@@ -41,30 +42,40 @@ for t in tasks:
     if os.path.isfile(filepath):
       dir = os.path.splitext(os.path.basename(filepath))[0]
       dirpath = os.path.join(AZURE_MOUNT, dir)
+      tmppath = os.path.join(TMP, dir)
       if os.path.isdir(dirpath):
         print("Dir %s already exists" % dirpath)
       else:
-        os.mkdir(dirpath)
+        # prepare
+        if os.path.isdir(tmppath):
+          os.system("rm -rf '%s'", tmppath)
+        os.mkdir(tmppath)
         
         # extract archive
         secs = time()
-        os.system("unzip -q %s -d %s" % (filepath, dirpath))
+        os.system("unzip -q %s -d %s" % (filepath, tmppath))
         print("Unzipped in %.1f seconds" % (time() - secs))
         
         # change permissions (just in case)
-        os.system("chmod -R a+rw %s" % dirpath)
+        os.system("chmod -R 755 %s" % tmppath)
         
         # convert images to webp
         secs = time()
-        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -exec cwebp -quiet '{}' -o '{}.webp' \;" % dirpath)
+        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -exec cwebp -quiet '{}' -o '{}.webp' \;" % tmppath)
         print("Conversion to webp in %.1f seconds" % (time() - secs))
         
         # delete original files, rename webp files and remove all non-images
         secs = time()
-        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % dirpath)
-        os.system("find '%s' -type d -exec rename 's/\.(png|gif|jpg|jpeg)\.webp/\.webp/g' '{}/*.webp' \;" % dirpath)
-        os.system("find '%s' -type f -not -iname *.webp -exec rm '{}' \;" % dirpath)
+        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
+        os.system("find '%s' -type d -exec rename 's/\.(png|gif|jpg|jpeg)\.webp/\.webp/g' '{}/*.webp' \;" % tmppath)
+        os.system("find '%s' -type f -not -iname *.webp -exec rm '{}' \;" % tmppath)
         print("Cleanup in %.1f seconds" % (time() - secs))
+        
+        # move files to cloud
+        secs = time()
+        os.system("mv '%s' '%s'" % (tmppath, dirpath))
+        print("Copied to storage in %.1f seconds" % (time() - secs))
+        
     else:
       print("Blob %s doesn't exist !" % blob)
     

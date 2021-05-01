@@ -26,5 +26,5 @@ build_script:
   - AZURE_STORAGE_MOUNT=/mnt/blob python3 ./processTasks.py
 after_build:
   - echo "after"
-#on_finish:
-#  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+on_finish:
+  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
