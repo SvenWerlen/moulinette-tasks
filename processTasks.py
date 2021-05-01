@@ -48,7 +48,7 @@ for t in tasks:
       else:
         # prepare
         if os.path.isdir(tmppath):
-          os.system("rm -rf '%s'", tmppath)
+          os.system("rm -rf '%s'" % tmppath)
         os.mkdir(tmppath)
         
         # extract archive
@@ -67,7 +67,7 @@ for t in tasks:
         # delete original files, rename webp files and remove all non-images
         secs = time()
         os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
-        os.system("find '%s' -type d -exec rename 's/\.(png|gif|jpg|jpeg)\.webp/\.webp/g' '{}/*.webp' \;" % tmppath)
+        os.system("find '%s' -type f -exec python3 rename.py '{}' \;" % tmppath)
         os.system("find '%s' -type f -not -iname *.webp -exec rm '{}' \;" % tmppath)
         print("Cleanup in %.1f seconds" % (time() - secs))
         
