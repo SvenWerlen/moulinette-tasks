@@ -56,7 +56,7 @@ for t in tasks:
         
         # convert images to webp
         secs = time()
-        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec convert '{}' '{}.webp' \;" % dirpath)
+        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -exec cwebp -quiet '{}' -o '{}.webp' \;" % dirpath)
         print("Conversion to webp in %.1f seconds" % (time() - secs))
         
         # delete original files, rename webp files and remove all non-images

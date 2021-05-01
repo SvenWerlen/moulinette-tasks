@@ -14,6 +14,8 @@ install:
   - sudo apt update
   - sudo apt -y install blobfuse fuse
   - sudo apt -y install imagemagick
+  - sudo apt -y install rename
+  - sudo apt -y install webp
 build_script:
   - sudo mkdir /mnt/blobfusetmp
   - sudo chown appveyor /mnt/blobfusetmp
