@@ -12,13 +12,6 @@ AZURE_MOUNT = os.getenv('AZURE_STORAGE_MOUNT')
 TASK_ID = os.getenv('TASK_ID')
 TMP = "/tmp/"
 
-## Utility function to delete a task when completed
-def completeTask(id):
-  response = requests.delete(url = MOULINETTE_API + "/task/%d" % id, headers = {"Content-Type": "application/json", "Authorization": "Bearer " + token})
-  if response.status_code != 200:
-    sys.exit("Task deleting failed. " + response.text)
-
-
 # Check environment variables
 if not MOULINETTE_API or not MOULINETTE_SECRET_KEY:
   sys.exit("Missing environment variables")
@@ -81,9 +74,6 @@ if task["type"] == "extract":
       secs = time()
       os.system("mv '%s' '%s'" % (tmppath, dirpath))
       print("Copied to storage in %.1f seconds" % (time() - secs))
-      
-    # Complete task
-    completeTask(task["id"])
       
   else:
     print("Blob %s doesn't exist !" % blob)
