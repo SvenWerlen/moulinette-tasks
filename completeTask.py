@@ -26,7 +26,7 @@ data = response.json()
 token = data["access_token"]
 
 # Mark task as completed
-response = requests.delete(url = MOULINETTE_API + "/task/%d" % TASK_ID, headers = {"Content-Type": "application/json", "Authorization": "Bearer " + token})
+response = requests.delete(url = MOULINETTE_API + "/task/%s" % TASK_ID, headers = {"Content-Type": "application/json", "Authorization": "Bearer " + token})
 if response.status_code != 200:
   sys.exit("Task deleting failed. " + response.text)
 
