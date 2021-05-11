@@ -16,6 +16,7 @@ install:
   - sudo apt -y -qq install imagemagick
   - sudo apt -y -qq install rename
   - sudo apt -y -qq install webp
+  - sudo apt -y -qq install ffmpeg
 build_script:
   - ./build.sh
 after_build:
