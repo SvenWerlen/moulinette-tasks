@@ -104,8 +104,9 @@ if task["type"] == "extract":
             if not found in thumbsToDelete:
               thumbsToDelete.append(found)
           else:
+            print("Thumbnail for video not found: %s" % thumb)
             # try to generate a new thumbnail from the video
-            os.system("ffmpeg -v -8 -ss 2 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
+            #os.system("ffmpeg -v -8 -ss 2 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
     
     # remove all thumbnails (to avoid them to appear in Foundry)
     for t in thumbsToDelete:
