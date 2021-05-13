@@ -68,7 +68,7 @@ if task["type"] == "extract":
     
     # extract archive
     secs = time()
-    os.system("unzip -q %s -d %s" % (filepath, tmppath))
+    os.system("./sunzip.sh %s %s" % (filepath, tmppath))
     print("Unzipped in %.1f seconds" % (time() - secs))
     
     # change permissions (just in case)
@@ -103,7 +103,7 @@ if task["type"] == "extract":
             shutil.copyfile(found, thumb)
             if not found in thumbsToDelete:
               thumbsToDelete.append(found)
-          else:
+          #else:
             print("Thumbnail for video not found: %s" % thumb)
             # try to generate a new thumbnail from the video
             #os.system("ffmpeg -v -8 -ss 2 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
@@ -126,7 +126,7 @@ if task["type"] == "extract":
     
     # move files to cloud
     secs = time()
-    os.system("mv '%s' '%s'" % (tmppath, dirpath))
+    os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
     print("Copied to storage in %.1f seconds" % (time() - secs))
       
   else:
