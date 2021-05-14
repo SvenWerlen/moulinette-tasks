@@ -74,10 +74,21 @@ if task["type"] == "extract":
     # change permissions (just in case)
     os.system("chmod -R 755 %s" % tmppath)
     
-    # special case for webm (videos) => check if matching webp file exists in same folder
+    # convert images to webp
+    secs = time()
+    os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -exec cwebp -quiet '{}' -o '{}.webp' \;" % tmppath)
+    os.system("find '%s' -type f -iname *.webp -exec python3 rename.py '{}' \;" % tmppath)
+    print("Conversion to webp in %.1f seconds" % (time() - secs))
+    
+    # POST PROCESSING
     thumbsToDelete = []
     for root, dirs, files in os.walk(tmppath):
       for file in files:
+        
+        ###
+        ### VIDEO PROCESSING
+        ### - look for exising thumbnail
+        ###
         if file.endswith(".webm"):
           thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
           # thumbnail already exists
@@ -108,30 +119,55 @@ if task["type"] == "extract":
             # try to generate a new thumbnail from the video
             #os.system("ffmpeg -v -8 -ss 2 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
     
+        ###
+        ### MAPS PROCESSING (JSON)
+        ### - look for matching image (or delete)
+        ### - compress json file
+        ###
+        if file.endswith(".json"):
+          with open(os.path.join(root, file), "r") as f:
+            data = json.load(f)
+            if not "navigation" in data:
+              continue
+            image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
+            # check if image available
+            if os.path.isfile(image):
+              baseFolder = root[len(tmppath)+1:]
+              data["img"] = "#DEP#%s/%s" % (baseFolder, os.path.splitext(file)[0] + ".webp")
+              
+              data['tokens'] = []
+              data['sounds'] = []
+              if "thumb" in data:
+                del data['thumb']
+              if "_priorThumbPath" in data:
+                del data['_priorThumbPath']
+              
+              with open(os.path.join(root, file), "w") as fw:
+                fw.write(json.dumps(data, separators=(',', ':')))
+            else:
+              os.remove(os.path.join(root, file))
+    
+    # CLEANUP
+
     # remove all thumbnails (to avoid them to appear in Foundry)
     for t in thumbsToDelete:
       os.remove(t)
     
-    # convert images to webp
-    secs = time()
-    os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -exec cwebp -quiet '{}' -o '{}.webp' \;" % tmppath)
-    print("Conversion to webp in %.1f seconds" % (time() - secs))
-    
     # delete original files, rename webp files and remove all non-supported files
     secs = time()
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
-    os.system("find '%s' -type f -not -iname *.webp -not -iname *.webm -exec rm '{}' \;" % tmppath)
-    os.system("find '%s' -type f -iname *.webp -exec python3 rename.py '{}' \;" % tmppath)
+    os.system("find '%s' -type f -not -iname *.webp -not -iname *.webm -not -iname *.json -exec rm '{}' \;" % tmppath)
     print("Cleanup in %.1f seconds" % (time() - secs))
     
     # move files to cloud
     secs = time()
-    os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
+    os.system("mv '%s' '%s'" % (tmppath, dirpath))
     print("Copied to storage in %.1f seconds" % (time() - secs))
+    
+    # cleanup
+    if os.path.isdir(tmppath):
+      os.system("rm -rf '%s'" % tmppath)
       
   else:
     print("Blob %s doesn't exist !" % blob)
     
-# cleanup
-if os.path.isdir(tmppath):
-  os.system("rm -rf '%s'" % tmppath)
