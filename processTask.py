@@ -122,6 +122,7 @@ if task["type"] == "extract":
         ###
         ### MAPS PROCESSING (JSON)
         ### - look for matching image (or delete)
+        ### - generate thumbnail image
         ### - compress json file
         ###
         if file.endswith(".json"):
@@ -134,6 +135,9 @@ if task["type"] == "extract":
             if os.path.isfile(image):
               baseFolder = root[len(tmppath)+1:]
               data["img"] = "#DEP#%s/%s" % (baseFolder, os.path.splitext(file)[0] + ".webp")
+              
+              # generate thumbnail
+              os.system("convert '%s' -thumbnail 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
               
               data['tokens'] = []
               data['sounds'] = []
