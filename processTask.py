@@ -137,8 +137,8 @@ if task["type"] == "extract":
               data["img"] = "#DEP#%s/%s" % (baseFolder, os.path.splitext(file)[0] + ".webp")
               
               # generate thumbnail
-              os.system("convert '%s' -thumbnail 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
-              
+              os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
+          
               data['tokens'] = []
               data['sounds'] = []
               if "thumb" in data:
