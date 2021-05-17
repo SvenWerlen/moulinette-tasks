@@ -55,7 +55,7 @@ if task["type"] == "extract":
   if os.path.isfile(filepath):
     dir = os.path.splitext(os.path.basename(filepath))[0]
     dirpath = os.path.join(AZURE_MOUNT, dir)
-    tmppath = os.path.join(TMP, dir)
+    tmppath = os.path.join(TMP, "mtte")
     
     # clear existing blobs (if any)
     if os.path.isdir(dirpath):
@@ -69,6 +69,7 @@ if task["type"] == "extract":
     # extract archive
     secs = time()
     os.system("./sunzip.sh %s %s" % (filepath, tmppath))
+    
     print("Unzipped in %.1f seconds" % (time() - secs))
     
     # change permissions (just in case)
@@ -76,9 +77,16 @@ if task["type"] == "extract":
     
     # convert images to webp
     secs = time()
-    os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -exec cwebp -quiet '{}' -o '{}.webp' \;" % tmppath)
-    os.system("find '%s' -type f -iname *.webp -exec python3 rename.py '{}' \;" % tmppath)
+    os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp {} \;" % tmppath)
     print("Conversion to webp in %.1f seconds" % (time() - secs))
+    
+    # load configuration if exists
+    cfg = None
+    if os.path.isfile(os.path.join(tmppath, dir, "config.json")):
+      with open(os.path.join(tmppath, dir, "config.json"), "r") as f:
+        cfg = json.load(f)
+    else:
+      print("No configuration file found!")
     
     # POST PROCESSING
     thumbsToDelete = []
@@ -125,31 +133,44 @@ if task["type"] == "extract":
         ### - generate thumbnail image
         ### - compress json file
         ###
+        ### PREFABS PROCESSING (JSON)
+        ### - look for all dependencies and replace with => #DEP#<path>
+        ### - compress json file
+        ###
         if file.endswith(".json"):
           with open(os.path.join(root, file), "r") as f:
-            data = json.load(f)
-            if not "navigation" in data:
-              continue
-            image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
-            # check if image available
-            if os.path.isfile(image):
-              baseFolder = root[len(tmppath)+1:]
-              data["img"] = "#DEP#%s/%s" % (baseFolder, os.path.splitext(file)[0] + ".webp")
-              
-              # generate thumbnail
-              os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
-          
-              data['tokens'] = []
-              data['sounds'] = []
-              if "thumb" in data:
-                del data['thumb']
-              if "_priorThumbPath" in data:
-                del data['_priorThumbPath']
-              
+            content = f.read().replace('\n', '')
+            data = json.loads(content)
+            if "type" in data and data["type"] == "npc":
+              if not cfg or not "depPath" in cfg:
+                print("Missing dependency path configuration!")
+                os.remove(os.path.join(root, file))
+              content = content.replace("\"%s/" % cfg["depPath"], "\"#DEP#")
+              data = json.loads(content)
               with open(os.path.join(root, file), "w") as fw:
                 fw.write(json.dumps(data, separators=(',', ':')))
-            else:
-              os.remove(os.path.join(root, file))
+                
+            elif "navigation" in data:
+              image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
+              # check if image available
+              if os.path.isfile(image):
+                baseFolder = root[len(tmppath)+1:]
+                data["img"] = "#DEP#%s/%s" % (baseFolder, os.path.splitext(file)[0] + ".webp")
+                
+                # generate thumbnail
+                os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
+            
+                data['tokens'] = []
+                data['sounds'] = []
+                if "thumb" in data:
+                  del data['thumb']
+                if "_priorThumbPath" in data:
+                  del data['_priorThumbPath']
+                
+                with open(os.path.join(root, file), "w") as fw:
+                  fw.write(json.dumps(data, separators=(',', ':')))
+              else:
+                os.remove(os.path.join(root, file))
     
     # CLEANUP
 
@@ -165,7 +186,7 @@ if task["type"] == "extract":
     
     # move files to cloud
     secs = time()
-    os.system("mv '%s' '%s'" % (tmppath, dirpath))
+    os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
     print("Copied to storage in %.1f seconds" % (time() - secs))
     
     # cleanup
