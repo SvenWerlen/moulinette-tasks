@@ -77,7 +77,7 @@ if task["type"] == "extract":
     
     # convert images to webp
     secs = time()
-    os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp {} \;" % tmppath)
+    os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
     print("Conversion to webp in %.1f seconds" % (time() - secs))
     
     # load configuration if exists
