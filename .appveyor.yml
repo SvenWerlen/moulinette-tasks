@@ -16,6 +16,7 @@ install:
   - sudo apt -y -qq install imagemagick
   - sudo apt -y -qq install rename
   - sudo apt -y -qq install webp
+  - sudo sed -i 's/name="disk" value="1GiB"/name="disk" value="8GiB"/' /etc/ImageMagick-6/policy.xml
 #  - sudo apt -y -qq install ffmpeg
 build_script:
   - ./build.sh
