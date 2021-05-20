@@ -173,7 +173,7 @@ if task["type"] == "extract":
                 os.remove(os.path.join(root, file))
     
     # CLEANUP
-
+    
     # remove all thumbnails (to avoid them to appear in Foundry)
     for t in thumbsToDelete:
       os.remove(t)
@@ -181,7 +181,7 @@ if task["type"] == "extract":
     # delete original files, rename webp files and remove all non-supported files
     secs = time()
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
-    os.system("find '%s' -type f -not -iname *.webp -not -iname *.webm -not -iname *.json -exec rm '{}' \;" % tmppath)
+    os.system("find '%s' -type f -not -iname \*.webp -not -iname \*.webm -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
     print("Cleanup in %.1f seconds" % (time() - secs))
     
     # move files to cloud
