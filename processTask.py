@@ -140,28 +140,39 @@ if task["type"] == "extract":
         if file.endswith(".json"):
           with open(os.path.join(root, file), "r") as f:
             content = f.read().replace('\n', '')
-            data = json.loads(content)
-            if "type" in data and data["type"] == "npc":
-              if not cfg or not "depPath" in cfg:
-                print("Missing dependency path configuration!")
-                os.remove(os.path.join(root, file))
+            
+            # if depPath defined => replace all paths with #DEP#
+            if cfg and "depPath" in cfg:
               content = content.replace("\"%s/" % cfg["depPath"], "\"#DEP#")
-              data = json.loads(content)
               with open(os.path.join(root, file), "w") as fw:
-                fw.write(json.dumps(data, separators=(',', ':')))
-                
+                fw.write(content)
+            
+            data = json.loads(content)            
+            
+            if "type" in data and data["type"] == "npc":
+              # nothing more to do
+              print("Processing prefab %s ... " % file)
             elif "navigation" in data:
+              # look for default location for scene image (same folder, same name) OR look for "img" in JSON
               image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
-              # check if image available
+              if not os.path.isfile(image):
+                if "img" in data and len(data["img"]) > 0:
+                  rootFolder = root[0:root.find('/', len(tmppath)+2)]
+                  image = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
+                else:
+                  print("Invalid map without img %s. Skipping" % file)
+                  os.remove(os.path.join(root, file))
+                  continue
+                
               if os.path.isfile(image):
-                baseFolder = root[len(tmppath)+1:]
-                data["img"] = "#DEP#%s/%s" % (baseFolder, os.path.splitext(file)[0] + ".webp")
+                imgPath = image[len(tmppath)+1:]
+                data["img"] = "#DEP#%s" % imgPath
                 
                 # generate thumbnail
                 os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
             
-                data['tokens'] = []
-                data['sounds'] = []
+                #data['tokens'] = []
+                #data['sounds'] = []
                 if "thumb" in data:
                   del data['thumb']
                 if "_priorThumbPath" in data:
@@ -169,7 +180,9 @@ if task["type"] == "extract":
                 
                 with open(os.path.join(root, file), "w") as fw:
                   fw.write(json.dumps(data, separators=(',', ':')))
+                
               else:
+                print("No image found for map %s. Skipping" % file)
                 os.remove(os.path.join(root, file))
     
     # CLEANUP
