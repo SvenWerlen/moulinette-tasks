@@ -165,7 +165,8 @@ if task["type"] == "extract":
                   continue
                 
               if os.path.isfile(image):
-                imgPath = image[len(tmppath)+1:]
+                rootFolder = root[0:root.find('/', len(tmppath)+2)]
+                imgPath = image[len(rootFolder)+1:]
                 data["img"] = "#DEP#%s" % imgPath
                 
                 # generate thumbnail
