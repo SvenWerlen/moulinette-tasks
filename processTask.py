@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import requests
 import json
 import zipfile
@@ -49,6 +50,7 @@ else:
 
 
 # TASK Extract
+log = ""
 if task["type"] == "extract":
   blob = task["data"]["blob"]
   filepath = os.path.join(AZURE_MOUNT, blob)
@@ -71,14 +73,62 @@ if task["type"] == "extract":
     os.system("./sunzip.sh %s %s" % (filepath, tmppath))
     
     print("Unzipped in %.1f seconds" % (time() - secs))
+    log += "Unzipped in %.1f seconds\n" % (time() - secs)
     
     # change permissions (just in case)
     os.system("chmod -R 755 %s" % tmppath)
     
-    # convert images to webp
+    ###
+    ### PRE PROCESSING #1
+    ### - extract information from any existing module
+    ###
+    fvttModulePath = os.path.join(tmppath, dir, "module.json")
+    if os.path.isfile(fvttModulePath):
+      with open(fvttModulePath, 'r') as f:
+        data = json.load(f)
+        if "name" in data:
+          print("Foundry VTT module.json file found with name '%s'" % data["name"])
+          log += "Foundry VTT module.json file found with name '%s'\n" % data["name"]
+    
+          config = {
+            "depPath" : "modules/%s" % data["name"]
+          }
+          with open(os.path.join(tmppath, dir, "config.json"), 'w') as out:
+            json.dump(config, out)
+    
+    ###
+    ### PRE PROCESSING #2
+    ### - extracts all entries from compendiums (if type supported)
+    ###
+    for root, dirs, files in os.walk(tmppath):
+      for file in files:
+        if file.endswith(".db"):
+          with open(os.path.join(root,file), 'r') as f:
+            for line in f:
+              data = json.loads(line)
+              if "name" in data:
+                filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
+                folder = None
+                # actors => prefab
+                if "type" in data and data["type"] == "npc":
+                  folder = os.path.join(tmppath, dir, "json", "prefabs")
+                # navigation => scene
+                elif "navigation" in data:
+                  folder = os.path.join(tmppath, dir, "json", "maps")
+                
+                if folder:
+                  os.system("mkdir -p %s" % folder)
+                  with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                    json.dump(data, out)
+    
+    ###
+    ### IMAGE CONVERSION
+    ### - converts all images to webp format
+    ###
     secs = time()
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
     print("Conversion to webp in %.1f seconds" % (time() - secs))
+    log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
     
     # load configuration if exists
     cfg = None
@@ -87,6 +137,7 @@ if task["type"] == "extract":
         cfg = json.load(f)
     else:
       print("No configuration file found!")
+      log += "No configuration file found!\n"
     
     # POST PROCESSING
     thumbsToDelete = []
@@ -98,6 +149,9 @@ if task["type"] == "extract":
         ### - look for exising thumbnail
         ###
         if file.endswith(".webm"):
+          print("- Webm %s ... " % file)
+          log += "- Webm %s ...\n" % file
+          
           thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
           # thumbnail already exists
           if os.path.isfile(thumb):
@@ -122,8 +176,11 @@ if task["type"] == "extract":
             shutil.copyfile(found, thumb)
             if not found in thumbsToDelete:
               thumbsToDelete.append(found)
+          else:
+            print("- No thumbnail found for %s ... " % file)
+            log += "- No thumbnail found for %s ...\n" % file
           #else:
-            print("Thumbnail for video not found: %s" % thumb)
+            #print("Thumbnail for video not found: %s" % thumb)
             # try to generate a new thumbnail from the video
             #os.system("ffmpeg -v -8 -ss 2 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
     
@@ -151,7 +208,9 @@ if task["type"] == "extract":
             
             if "type" in data and data["type"] == "npc":
               # nothing more to do
-              print("Processing prefab %s ... " % file)
+              print("- Prefab %s ... " % file)
+              log += "- Prefab %s ...\n" % file
+              
             elif "navigation" in data:
               # look for default location for scene image (same folder, same name) OR look for "img" in JSON
               image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
@@ -160,11 +219,15 @@ if task["type"] == "extract":
                   rootFolder = root[0:root.find('/', len(tmppath)+2)]
                   image = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
                 else:
-                  print("Invalid map without img %s. Skipping" % file)
+                  print("- Map %s with invalid img path. Skipped" % file)
+                  log += "- Map %s with invalid img path. Skipped\n" % file
                   os.remove(os.path.join(root, file))
                   continue
                 
               if os.path.isfile(image):
+                print("- Scene %s ... " % file)
+                log += "- Scene %s ...\n" % file
+              
                 rootFolder = root[0:root.find('/', len(tmppath)+2)]
                 imgPath = image[len(rootFolder)+1:]
                 data["img"] = "#DEP#%s" % imgPath
@@ -172,8 +235,6 @@ if task["type"] == "extract":
                 # generate thumbnail
                 os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
             
-                #data['tokens'] = []
-                #data['sounds'] = []
                 if "thumb" in data:
                   del data['thumb']
                 if "_priorThumbPath" in data:
@@ -183,10 +244,13 @@ if task["type"] == "extract":
                   fw.write(json.dumps(data, separators=(',', ':')))
                 
               else:
-                print("No image found for map %s. Skipping" % file)
+                print("- Map %s without image. Skipped" % file)
+                log += "- Map %s without image. Skipped\n" % file
                 os.remove(os.path.join(root, file))
     
-    # CLEANUP
+    ###
+    ### CLEANUP
+    ###
     
     # remove all thumbnails (to avoid them to appear in Foundry)
     for t in thumbsToDelete:
@@ -197,15 +261,26 @@ if task["type"] == "extract":
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
     os.system("find '%s' -type f -not -iname \*.webp -not -iname \*.webm -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
     print("Cleanup in %.1f seconds" % (time() - secs))
+    log += "Cleanup in %.1f seconds\n" % (time() - secs)
     
     # move files to cloud
     secs = time()
     os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
     print("Copied to storage in %.1f seconds" % (time() - secs))
+    log += "Copied to storage in %.1f seconds\n" % (time() - secs)
     
     # cleanup
     if os.path.isdir(tmppath):
       os.system("rm -rf '%s'" % tmppath)
+      
+    ###
+    ### LOG
+    ###
+    log += "\n\nDependencies:\n"
+    logPath = os.path.join(dirpath, "info.log")
+    with open(logPath, 'w') as out:
+      out.write(log)
+    os.system("grep 'modules/[^/]*/[^\"]*' %s -ohr | sort | uniq >> %s" % (dirpath, logPath))
       
   else:
     print("Blob %s doesn't exist !" % blob)
