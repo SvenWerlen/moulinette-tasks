@@ -83,7 +83,8 @@ if task["type"] == "extract":
     ### - extract information from any existing module
     ###
     fvttModulePath = os.path.join(tmppath, dir, "module.json")
-    if os.path.isfile(fvttModulePath):
+    configPath = os.path.join(tmppath, dir, "config.json")
+    if os.path.isfile(fvttModulePath) and not os.path.isfile(configPath):
       with open(fvttModulePath, 'r') as f:
         data = json.load(f)
         if "name" in data:
@@ -93,7 +94,7 @@ if task["type"] == "extract":
           config = {
             "depPath" : "modules/%s" % data["name"]
           }
-          with open(os.path.join(tmppath, dir, "config.json"), 'w') as out:
+          with open(configPath, 'w') as out:
             json.dump(config, out)
     
     ###
@@ -132,8 +133,8 @@ if task["type"] == "extract":
     
     # load configuration if exists
     cfg = None
-    if os.path.isfile(os.path.join(tmppath, dir, "config.json")):
-      with open(os.path.join(tmppath, dir, "config.json"), "r") as f:
+    if os.path.isfile(configPath):
+      with open(configPath, "r") as f:
         cfg = json.load(f)
     else:
       print("No configuration file found!")
@@ -201,6 +202,10 @@ if task["type"] == "extract":
             # if depPath defined => replace all paths with #DEP#
             if cfg and "depPath" in cfg:
               content = content.replace("\"%s/" % cfg["depPath"], "\"#DEP#")
+              if "external" in cfg:
+                for idx, dep in enumerate(cfg["external"]):
+                  content = content.replace("\"%s/" % dep["src"], "\"#DEP%d#" % idx)
+
               with open(os.path.join(root, file), "w") as fw:
                 fw.write(content)
             
@@ -280,7 +285,7 @@ if task["type"] == "extract":
     logPath = os.path.join(dirpath, "info.log")
     with open(logPath, 'w') as out:
       out.write(log)
-    os.system("grep 'modules/[^/]*/[^\"]*' %s -ohr | sort | uniq >> %s" % (dirpath, logPath))
+    os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> %s" % (dirpath, logPath))
       
   else:
     print("Blob %s doesn't exist !" % blob)
