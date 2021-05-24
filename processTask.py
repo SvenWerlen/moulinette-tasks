@@ -177,13 +177,13 @@ if task["type"] == "extract":
             shutil.copyfile(found, thumb)
             if not found in thumbsToDelete:
               thumbsToDelete.append(found)
-          else:
-            print("- No thumbnail found for %s ... " % file)
-            log += "- No thumbnail found for %s ...\n" % file
           #else:
-            #print("Thumbnail for video not found: %s" % thumb)
+          #  print("- No thumbnail found for %s ... " % file)
+          #  log += "- No thumbnail found for %s ...\n" % file
+          else:
+            print("- Generating thumbnail for video: %s" % file)
             # try to generate a new thumbnail from the video
-            #os.system("ffmpeg -v -8 -ss 2 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
+            os.system("ffmpeg -v -8 -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
     
         ###
         ### MAPS PROCESSING (JSON)
