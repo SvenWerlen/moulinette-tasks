@@ -183,7 +183,10 @@ if task["type"] == "extract":
           else:
             print("- Generating thumbnail for video: %s" % file)
             # try to generate a new thumbnail from the video
-            os.system("ffmpeg -v -8 -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
+            videoPath = os.path.join(root, file)
+            thumbFilename = os.path.join(root, os.path.splitext(file)[0])
+            os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
+            #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
     
         ###
         ### MAPS PROCESSING (JSON)
