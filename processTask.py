@@ -163,15 +163,6 @@ if task["type"] == "extract":
           for f in os.listdir(root):
             if not f.endswith(".webp"):
               continue
-            # filename is included (ex: myvideo-200x200.webm and myvideo.webp)
-            if file.startswith(os.path.splitext(f)[0]):
-              found = os.path.join(root, f)
-              break
-            # filename is included when removing the last _... part (ex: myvideo-200x200.webm and myvideo_thumb.webp)
-            underscore = f.rfind('_')
-            if underscore > 0 and file.startswith(f[0:underscore]):
-              found = os.path.join(root, f)
-              break
           
           if found:
             shutil.copyfile(found, thumb)
