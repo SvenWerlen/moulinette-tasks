@@ -153,8 +153,7 @@ if task["type"] == "extract":
             name = ' '.join(elem.capitalize() for elem in name.split())
             data = {
               "name": name,
-              "navigation": False,
-              "img": file
+              "navigation": False
             }
             with open(os.path.join(root, map), "w") as fw:
               fw.write(json.dumps(data, separators=(',', ':')))
@@ -252,6 +251,13 @@ if task["type"] == "extract":
               
                 rootFolder = root[0:root.find('/', len(tmppath)+2)]
                 imgPath = image[len(rootFolder)+1:]
+                
+                # support for video (webm/mp4) as image file (webp image also exists)
+                if os.path.isfile(os.path.join(root, os.path.splitext(file)[0] + ".mp4")):
+                  imgPath = os.path.splitext(imgPath)[0] + ".mp4"
+                elif os.path.isfile(os.path.join(root, os.path.splitext(file)[0] + ".webm")):
+                  imgPath = os.path.splitext(imgPath)[0] + ".webm"
+                
                 data["img"] = "#DEP#%s" % imgPath
                 
                 # generate thumbnail
