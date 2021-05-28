@@ -140,6 +140,25 @@ if task["type"] == "extract":
       print("No configuration file found!")
       log += "No configuration file found!\n"
     
+    
+    ###
+    ### GENERATE MAPS FROM IMAGE or VIDEO
+    ###
+    if cfg and "maps" in cfg:
+      for root, dirs, files in os.walk(os.path.join(tmppath, dir, cfg["maps"])):
+        for file in files:
+          if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
+            map = os.path.join(root, os.path.splitext(file)[0] + ".json")
+            name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
+            name = ' '.join(elem.capitalize() for elem in name.split())
+            data = {
+              "name": name,
+              "navigation": False,
+              "img": file
+            }
+            with open(os.path.join(root, map), "w") as fw:
+              fw.write(json.dumps(data, separators=(',', ':')))
+    
     # POST PROCESSING
     thumbsToDelete = []
     for root, dirs, files in os.walk(tmppath):
@@ -149,9 +168,9 @@ if task["type"] == "extract":
         ### VIDEO PROCESSING
         ### - look for exising thumbnail
         ###
-        if file.endswith(".webm"):
-          print("- Webm %s ... " % file)
-          log += "- Webm %s ...\n" % file
+        if file.endswith(".webm") or file.endswith(".mp4"):
+          print("- Webm/mp4 %s ... " % file)
+          log += "- Webm/mp4 %s ...\n" % file
           
           thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
           # thumbnail already exists
@@ -178,7 +197,11 @@ if task["type"] == "extract":
             thumbFilename = os.path.join(root, os.path.splitext(file)[0])
             os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
             #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
+          
     
+    for root, dirs, files in os.walk(tmppath):
+      for file in files:
+        
         ###
         ### MAPS PROCESSING (JSON)
         ### - look for matching image (or delete)
@@ -258,7 +281,7 @@ if task["type"] == "extract":
     # delete original files, rename webp files and remove all non-supported files
     secs = time()
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
-    os.system("find '%s' -type f -not -iname \*.webp -not -iname \*.webm -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
+    os.system("find '%s' -type f -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
     print("Cleanup in %.1f seconds" % (time() - secs))
     log += "Cleanup in %.1f seconds\n" % (time() - secs)
     
