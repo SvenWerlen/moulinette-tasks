@@ -70,7 +70,12 @@ if task["type"] == "extract":
     
     # extract archive
     secs = time()
-    os.system("./sunzip.sh %s %s" % (filepath, tmppath))
+    if filepath.endswith(".zip"):
+      os.system("./sunzip.sh %s %s" % (filepath, tmppath))
+    elif filepath.endswith(".dungeondraft_pack"):
+      os.system("~/go/bin/dungeondraft-unpack %s %s" % (filepath, tmppath))
+    else:
+      sys.exit("Invalid file %s" % filepath)
     
     print("Unzipped in %.1f seconds" % (time() - secs))
     log += "Unzipped in %.1f seconds\n" % (time() - secs)
