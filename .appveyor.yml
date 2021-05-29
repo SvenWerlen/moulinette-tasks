@@ -23,5 +23,5 @@ build_script:
   - ./build.sh
 after_build:
   - echo "after"
-#on_finish:
-  #- curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+on_finish:
+  - curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
