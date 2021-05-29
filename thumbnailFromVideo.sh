@@ -5,7 +5,7 @@ set -e
 LC_ALL="en_US.UTF-8"
 
 # extract video length
-DURATION=$(ffprobe -loglevel error -of csv=p=0 -show_entries format=duration $1)
+DURATION=$(ffprobe -loglevel error -of csv=p=0 -show_entries format=duration "$1")
 
 # get half length
 HALF=$(printf "%0.2f" "$(bc -l <<< "$DURATION*0.5")")
