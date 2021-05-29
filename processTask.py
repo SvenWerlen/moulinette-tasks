@@ -282,6 +282,22 @@ if task["type"] == "extract":
                 os.remove(os.path.join(root, file))
     
     ###
+    ### Generate thumbnails if not exist
+    ###    
+    secs = time()
+    for root, dirs, files in os.walk(tmppath):
+      for file in files:
+        if file.endswith(".webp") and not "_thumb" in file:
+          thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+          if not os.path.isfile(thumbPath):
+            imagePath = os.path.join(root, file)
+            os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
+            print("- Thumbnail generated for %s" % file)
+            log += "- Thumbnail generated for %s\n" % file
+    print("Thumbnails generated in %.1f seconds" % (time() - secs))
+    log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
+    
+    ###
     ### CLEANUP
     ###
     
