@@ -18,6 +18,7 @@ install:
   - sudo apt -y -qq install webp
   - sudo sed -i 's/name="disk" value="1GiB"/name="disk" value="8GiB"/' /etc/ImageMagick-6/policy.xml
   - sudo apt -y -qq install ffmpeg
+  - go get github.com/ryex/dungeondraft-gopackager/cmd/dungeondraft-unpack
 build_script:
   - ./build.sh
 after_build:
