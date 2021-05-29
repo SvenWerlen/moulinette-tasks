@@ -326,7 +326,6 @@ if task["type"] == "extract":
     secs = time()
     os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
     print("Copied to storage in %.1f seconds" % (time() - secs))
-    log += "Copied to storage in %.1f seconds\n" % (time() - secs)
     
     # cleanup
     if os.path.isdir(tmppath):
