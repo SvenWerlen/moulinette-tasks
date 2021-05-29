@@ -73,7 +73,7 @@ if task["type"] == "extract":
     if filepath.endswith(".zip"):
       os.system("./sunzip.sh %s %s" % (filepath, tmppath))
     elif filepath.endswith(".dungeondraft_pack"):
-      os.system("$GOPATH/bin/dungeondraft-unpack %s %s" % (filepath, tmppath))
+      os.system("$GOPATH/bin/dungeondraft-unpack '%s' '%s'" % (filepath, tmppath))
     else:
       sys.exit("Invalid file %s" % filepath)
     
