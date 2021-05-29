@@ -312,6 +312,15 @@ if task["type"] == "extract":
     os.system("find '%s' -type f -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
     print("Cleanup in %.1f seconds" % (time() - secs))
     log += "Cleanup in %.1f seconds\n" % (time() - secs)
+
+    ###
+    ### LOG
+    ###
+    log += "\n\nDependencies:\n"
+    logPath = os.path.join(tmppath, dir, "info.log")
+    with open(logPath, 'w') as out:
+      out.write(log)
+    os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> %s" % (tmppath, logPath))
     
     # move files to cloud
     secs = time()
@@ -322,15 +331,6 @@ if task["type"] == "extract":
     # cleanup
     if os.path.isdir(tmppath):
       os.system("rm -rf '%s'" % tmppath)
-      
-    ###
-    ### LOG
-    ###
-    log += "\n\nDependencies:\n"
-    logPath = os.path.join(dirpath, "info.log")
-    with open(logPath, 'w') as out:
-      out.write(log)
-    os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> %s" % (dirpath, logPath))
       
   else:
     print("Blob %s doesn't exist !" % blob)
