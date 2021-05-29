@@ -130,6 +130,7 @@ if task["type"] == "extract":
     ###
     ### IMAGE CONVERSION
     ### - converts all images to webp format
+    ### - generates thumbnails
     ###
     secs = time()
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)

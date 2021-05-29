@@ -23,5 +23,15 @@ build_script:
   - ./build.sh
 after_build:
   - echo "after"
+artifacts:
+  - path: '/tmp/mtte/*'
+    name: $(BLOB)
+deploy:
+  provider: AzureBlob
+  storage_account_name: $(AZURE_STORAGE_ACCOUNT)
+  storage_access_key:
+    secure: $(AZURE_STORAGE_ACCESS_KEY)
+  container: $(BLOB)
+  folder: $(APPVEYOR_PROJECT_SLUG)\$(APPVEYOR_BUILD_VERSION)
 #on_finish:
 #  - curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
