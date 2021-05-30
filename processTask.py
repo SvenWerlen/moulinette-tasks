@@ -71,7 +71,7 @@ if task["type"] == "extract":
     # extract archive
     secs = time()
     if filepath.endswith(".zip"):
-      os.system("./sunzip.sh %s %s" % (filepath, tmppath))
+      os.system("./sunzip.sh '%s' '%s'" % (filepath, tmppath))
     elif filepath.endswith(".dungeondraft_pack"):
       os.system("$GOPATH/bin/dungeondraft-unpack '%s' '%s'" % (filepath, tmppath))
     else:
@@ -81,7 +81,7 @@ if task["type"] == "extract":
     log += "Unzipped in %.1f seconds\n" % (time() - secs)
     
     # change permissions (just in case)
-    os.system("chmod -R 755 %s" % tmppath)
+    os.system("chmod -R 755 '%s'" % tmppath)
     
     ###
     ### PRE PROCESSING #1
@@ -123,7 +123,7 @@ if task["type"] == "extract":
                   folder = os.path.join(tmppath, dir, "json", "maps")
                 
                 if folder:
-                  os.system("mkdir -p %s" % folder)
+                  os.system("mkdir -p '%s'" % folder)
                   with open(os.path.join(folder, filename + ".json"), 'w') as out:
                     json.dump(data, out)
     
@@ -317,10 +317,19 @@ if task["type"] == "extract":
     ### LOG
     ###
     log += "\n\nDependencies:\n"
-    logPath = os.path.join(tmppath, dir, "info.log")
-    with open(logPath, 'w') as out:
-      out.write(log)
-    os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> %s" % (tmppath, logPath))
+    
+    folder = None
+    # find unique folder in tmp
+    for d in os.listdir(tmppath):
+      if os.path.isdir(os.path.join(tmppath, d)):
+        folder = d
+        break
+    
+    if folder:
+      logPath = os.path.join(tmppath, folder, "info.log")
+      with open(logPath, 'w') as out:
+        out.write(log)
+      os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> '%s'" % (tmppath, logPath))
     
     # move files to cloud
     secs = time()
