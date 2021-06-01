@@ -59,6 +59,8 @@ if task["type"] == "extract":
     dirpath = os.path.join(AZURE_MOUNT, dir)
     tmppath = os.path.join(TMP, "mtte")
     
+    print("Processing '%s'" % blob)
+    
     # clear existing blobs (if any)
     if os.path.isdir(dirpath):
       os.system("rm -rf '%s'" % dirpath)
