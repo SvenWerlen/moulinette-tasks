@@ -19,7 +19,6 @@ TASK_TYPE = os.getenv('LOCAL_TYPE')
 TASK_FILE = os.getenv('LOCAL_FILE')
 
 
-
 # Check environment variables
 if AZURE_MOUNT and MOULINETTE_API and MOULINETTE_SECRET_KEY and TASK_ID:
 
@@ -229,6 +228,9 @@ if task["type"] == "extract":
               if "external" in cfg:
                 for idx, dep in enumerate(cfg["external"]):
                   content = content.replace("\"%s/" % dep["src"], "\"#DEP%d#" % idx)
+              
+              # make sure that all assets are in webm format
+              content = re.sub(r'"(#DEP[^"]*).(?:png|jpg)"', '"\g<1>.webp"', content)
 
               with open(os.path.join(root, file), "w") as fw:
                 fw.write(content)
