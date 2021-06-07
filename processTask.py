@@ -85,7 +85,10 @@ if task["type"] == "extract":
     ### - extract information from any existing module
     ###
     fvttModulePath = os.path.join(tmppath, dir, "module.json")
-    configPath = os.path.join(tmppath, dir, "config.json")
+    configPath = os.path.join(tmppath, dir, "json", "config.json")
+    if not os.path.isfile(configPath):
+      configPath = os.path.join(tmppath, dir, "config.json")
+    
     if os.path.isfile(fvttModulePath) and not os.path.isfile(configPath):
       with open(fvttModulePath, 'r') as f:
         data = json.load(f)
@@ -246,12 +249,14 @@ if task["type"] == "extract":
                   rootFolder = root[0:root.find('/', len(tmppath)+2)]
                   image = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
                 else:
-                  print("- Map %s with invalid img path. Skipped" % file)
-                  log += "- Map %s with invalid img path. Skipped\n" % file
+                  print("- Map %s with missing img path. Skipped" % file)
+                  log += "- Map %s with missing img path. Skipped\n" % file
                   os.remove(os.path.join(root, file))
                   continue
                 
-              if os.path.isfile(image):
+              # if image path depends on another pack => don't generate thumbnail (assume it was done)
+              imgExternal = re.match("#DEP\d#", data["img"])
+              if imgExternal or os.path.isfile(image):
                 print("- Scene %s ... " % file)
                 log += "- Scene %s ...\n" % file
               
@@ -264,10 +269,11 @@ if task["type"] == "extract":
                 elif os.path.isfile(os.path.join(root, os.path.splitext(file)[0] + ".webm")):
                   imgPath = os.path.splitext(imgPath)[0] + ".webm"
                 
-                data["img"] = "#DEP#%s" % imgPath
-                
-                # generate thumbnail
-                os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
+                if not imgExternal:
+                  data["img"] = "#DEP#%s" % imgPath
+
+                  # generate thumbnail
+                  os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
             
                 if "thumb" in data:
                   del data['thumb']
@@ -278,8 +284,8 @@ if task["type"] == "extract":
                   fw.write(json.dumps(data, separators=(',', ':')))
                 
               else:
-                print("- Map %s without image. Skipped" % file)
-                log += "- Map %s without image. Skipped\n" % file
+                print("- Map %s without image (%s). Skipped" % (file, image))
+                log += "- Map %s without image (%s). Skipped\n" % (file, image)
                 os.remove(os.path.join(root, file))
     
     ###
@@ -314,7 +320,7 @@ if task["type"] == "extract":
     # delete original files, rename webp files and remove all non-supported files
     secs = time()
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
-    os.system("find '%s' -type f -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
+    os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
     print("Cleanup in %.1f seconds" % (time() - secs))
     log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
