@@ -59,11 +59,7 @@ if task["type"] == "extract":
     tmppath = os.path.join(TMP, "mtte")
     
     print("Processing '%s'" % blob)
-    
-    # clear existing blobs (if any)
-    if os.path.isdir(dirpath):
-      os.system("rm -rf '%s'" % dirpath)
-    
+        
     # prepare
     if os.path.isdir(tmppath):
       os.system("rm -rf '%s'" % tmppath)
@@ -297,8 +293,13 @@ if task["type"] == "extract":
           if not os.path.isfile(thumbPath):
             imagePath = os.path.join(root, file)
             os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
-            print("- Thumbnail generated for %s" % file)
-            log += "- Thumbnail generated for %s\n" % file
+            if os.path.isfile(thumbPath):
+              print("- Thumbnail generated for %s" % file)
+              log += "- Thumbnail generated for %s\n" % file
+            else:
+              print("- Thumbnail NOT GENERATED as expected for %s" % file)
+              log += "- Thumbnail NOT GENERATED as expected for %s\n" % file
+
     print("Thumbnails generated in %.1f seconds" % (time() - secs))
     log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
     
@@ -334,6 +335,13 @@ if task["type"] == "extract":
       with open(logPath, 'w') as out:
         out.write(log)
       os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> '%s'" % (tmppath, logPath))
+
+    
+    # clear existing blobs (if any)
+    secs = time()
+    if os.path.isdir(dirpath):
+      os.system("rm -rf '%s'" % dirpath)
+    print("Existing blobs deleted in %.1f seconds" % (time() - secs))
     
     # move files to cloud
     secs = time()
