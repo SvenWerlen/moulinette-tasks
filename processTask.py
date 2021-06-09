@@ -128,6 +128,17 @@ if task["type"] == "extract":
                     json.dump(data, out)
     
     ###
+    ### PRE PROCESSING #3 (special for Baileywiki)
+    ### - assuming that all images in json/ folder are thumbnails, rename them accordingly
+    ###
+    for root, dirs, files in os.walk(os.path.join(TMP, "mtte", dir, "json")):
+      for file in files:
+        if file.endswith(".webp"):
+          source = os.path.join(root, file)
+          target = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+          os.rename(source, target)
+    
+    ###
     ### IMAGE CONVERSION
     ### - converts all images to webp format
     ### - generates thumbnails
@@ -210,7 +221,7 @@ if task["type"] == "extract":
         ###
         ### MAPS PROCESSING (JSON)
         ### - look for matching image (or delete)
-        ### - generate thumbnail image
+        ### - generate thumbnail image (if not provided)
         ### - compress json file
         ###
         ### PREFABS PROCESSING (JSON)
@@ -247,7 +258,13 @@ if task["type"] == "extract":
               if not os.path.isfile(image):
                 if "img" in data and len(data["img"]) > 0:
                   rootFolder = root[0:root.find('/', len(tmppath)+2)]
-                  image = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
+                  imagePath = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
+                  # copy background image file near json file (required to match with thumbnail)
+                  if re.match("#DEP\d#", data["img"]):
+                    print("Thumbnail is not possible from external pack: %s" % data["img"])
+                    image = imagePath
+                  else:
+                    shutil.copyfile(imagePath, image)
                 else:
                   print("- Map %s with missing img path. Skipped" % file)
                   log += "- Map %s with missing img path. Skipped\n" % file
@@ -273,7 +290,9 @@ if task["type"] == "extract":
                   data["img"] = "#DEP#%s" % imgPath
 
                   # generate thumbnail
-                  os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, os.path.splitext(image)[0] + "_thumb.webp"))
+                  thumbPath = os.path.splitext(image)[0] + "_thumb.webp"
+                  if not os.path.isfile(thumbPath):
+                    os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, thumbPath))
             
                 if "thumb" in data:
                   del data['thumb']
