@@ -12,16 +12,17 @@ init:
 install:
   - sudo apt clean
   - sudo apt update
-  - sudo apt -y -qq install blobfuse fuse
+  - sudo apt -y install python3-pip
   - sudo apt -y -qq install imagemagick
   - sudo apt -y -qq install rename
   - sudo apt -y -qq install webp
   - sudo sed -i 's/name="disk" value="1GiB"/name="disk" value="8GiB"/' /etc/ImageMagick-6/policy.xml
   - sudo apt -y -qq install ffmpeg
   - go get github.com/ryex/dungeondraft-gopackager/cmd/dungeondraft-unpack
+  - pip3 install azure-storage-blob
 build_script:
   - ./build.sh
 after_build:
   - echo "after"
-on_finish:
-  - curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+#on_finish:
+#- curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -

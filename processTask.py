@@ -7,58 +7,28 @@ import zipfile
 import shutil
 from time import time
 
-# Get environment variables (production usage)
-MOULINETTE_API = os.getenv('MOULINETTE_API')
-MOULINETTE_SECRET_KEY = os.getenv('MOULINETTE_SECRET')
-AZURE_MOUNT = os.getenv('AZURE_STORAGE_MOUNT')
-TASK_ID = os.getenv('TASK_ID')
+# Get required variable environment
+OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER')
 TMP = "/tmp/"
 
-# Get environment variables (local/debugging usages)
-TASK_TYPE = os.getenv('LOCAL_TYPE')
-TASK_FILE = os.getenv('LOCAL_FILE')
+if not OUTPUT_FOLDER or not os.path.isfile(os.path.join(OUTPUT_FOLDER, "task.json")):
+  sys.exit("[ProcessTask] %s is not a valid directory or task.json not found" % OUTPUT_FOLDER)
 
-
-# Check environment variables
-if AZURE_MOUNT and MOULINETTE_API and MOULINETTE_SECRET_KEY and TASK_ID:
-
-  # Get authorization code
-  response = requests.post(url = MOULINETTE_API + "/login", data = json.dumps({"secret" : MOULINETTE_SECRET_KEY}), headers = {"Content-Type": "application/json"})
-
-  if response.status_code != 201:
-    sys.exit("Authorization failed! " + response.text)
-
-  data = response.json()
-  token = data["access_token"]
-
-  # Get tasks
-  response = requests.get(url = MOULINETTE_API + "/task/" + TASK_ID, headers = {"Content-Type": "application/json", "Authorization": "Bearer " + token})
-
-  if response.status_code != 200:
-    sys.exit("Get tasks failed! " + response.text)
-
-  task = response.json()
-  id = task["id"]
-
-elif AZURE_MOUNT and TASK_TYPE and TASK_FILE:
-  task = { "type": TASK_TYPE, "data": { "blob": TASK_FILE } }
-  
-else:
-  print(AZURE_MOUNT, TASK_TYPE, TASK_FILE)
-  sys.exit("Missing environment variables")
+task = {}
+with open(os.path.join(OUTPUT_FOLDER, "task.json")) as f:
+  task = json.load(f)
 
 
 # TASK Extract
 log = ""
 if task["type"] == "extract":
   blob = task["data"]["blob"]
-  filepath = os.path.join(AZURE_MOUNT, blob)
+  filepath = os.path.join(OUTPUT_FOLDER, blob)
   if os.path.isfile(filepath):
     dir = os.path.splitext(os.path.basename(filepath))[0]
-    dirpath = os.path.join(AZURE_MOUNT, dir)
-    tmppath = os.path.join(TMP, "mtte")
-    
-    print("Processing '%s'" % blob)
+    dirpath = os.path.join(OUTPUT_FOLDER, dir)
+    tmppath = os.path.join(TMP, "mtte")    
+    print("[ProcessTask] Processing '%s'" % blob)
         
     # prepare
     if os.path.isdir(tmppath):
@@ -74,7 +44,7 @@ if task["type"] == "extract":
     else:
       sys.exit("Invalid file %s" % filepath)
     
-    print("Unzipped in %.1f seconds" % (time() - secs))
+    print("[ProcessTask] Unzipped in %.1f seconds" % (time() - secs))
     log += "Unzipped in %.1f seconds\n" % (time() - secs)
     
     # change permissions (just in case)
@@ -93,7 +63,7 @@ if task["type"] == "extract":
       with open(fvttModulePath, 'r') as f:
         data = json.load(f)
         if "name" in data:
-          print("Foundry VTT module.json file found with name '%s'" % data["name"])
+          print("[ProcessTask] Foundry VTT module.json file found with name '%s'" % data["name"])
           log += "Foundry VTT module.json file found with name '%s'\n" % data["name"]
     
           config = {
@@ -145,7 +115,7 @@ if task["type"] == "extract":
     ###
     secs = time()
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
-    print("Conversion to webp in %.1f seconds" % (time() - secs))
+    print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
     log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
     
     # load configuration if exists
@@ -154,7 +124,7 @@ if task["type"] == "extract":
       with open(configPath, "r") as f:
         cfg = json.load(f)
     else:
-      print("No configuration file found!")
+      print("[ProcessTask] No configuration file found!")
       log += "No configuration file found!\n"
     
     
@@ -185,7 +155,7 @@ if task["type"] == "extract":
         ### - look for exising thumbnail
         ###
         if file.endswith(".webm") or file.endswith(".mp4"):
-          print("- Webm/mp4 %s ... " % file)
+          print("[ProcessTask] - Webm/mp4 %s ... " % file)
           log += "- Webm/mp4 %s ...\n" % file
           
           thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
@@ -207,7 +177,7 @@ if task["type"] == "extract":
           #  print("- No thumbnail found for %s ... " % file)
           #  log += "- No thumbnail found for %s ...\n" % file
           else:
-            print("- Generating thumbnail for video: %s" % file)
+            print("[ProcessTask] - Generating thumbnail for video: %s" % file)
             # try to generate a new thumbnail from the video
             videoPath = os.path.join(root, file)
             thumbFilename = os.path.join(root, os.path.splitext(file)[0])
@@ -261,20 +231,20 @@ if task["type"] == "extract":
                   imagePath = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
                   # copy background image file near json file (required to match with thumbnail)
                   if re.match("#DEP\d#", data["img"]):
-                    print("Thumbnail is not possible from external pack: %s" % data["img"])
+                    print("[ProcessTask] Thumbnail is not possible from external pack: %s" % data["img"])
                     image = imagePath
                   else:
                     shutil.copyfile(imagePath, image)
                 else:
-                  print("- Map %s with missing img path. Skipped" % file)
+                  print("[ProcessTask] - Map %s with missing img path. Skipped" % file)
                   log += "- Map %s with missing img path. Skipped\n" % file
                   os.remove(os.path.join(root, file))
                   continue
                 
               # if image path depends on another pack => don't generate thumbnail (assume it was done)
-              imgExternal = re.match("#DEP\d#", data["img"])
+              imgExternal = re.match("#DEP\d#", data["img"]) if "img" in data else None
               if imgExternal or os.path.isfile(image):
-                print("- Scene %s ... " % file)
+                print("[ProcessTask] - Scene %s ... " % file)
                 log += "- Scene %s ...\n" % file
               
                 rootFolder = root[0:root.find('/', len(tmppath)+2)]
@@ -303,7 +273,7 @@ if task["type"] == "extract":
                   fw.write(json.dumps(data, separators=(',', ':')))
                 
               else:
-                print("- Map %s without image (%s). Skipped" % (file, image))
+                print("[ProcessTask] - Map %s without image (%s). Skipped" % (file, image))
                 log += "- Map %s without image (%s). Skipped\n" % (file, image)
                 os.remove(os.path.join(root, file))
     
@@ -319,13 +289,13 @@ if task["type"] == "extract":
             imagePath = os.path.join(root, file)
             os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
             if os.path.isfile(thumbPath):
-              print("- Thumbnail generated for %s" % file)
+              print("[ProcessTask] - Thumbnail generated for %s" % file)
               log += "- Thumbnail generated for %s\n" % file
             else:
-              print("- Thumbnail NOT GENERATED as expected for %s" % file)
+              print("[ProcessTask] - Thumbnail NOT GENERATED as expected for %s" % file)
               log += "- Thumbnail NOT GENERATED as expected for %s\n" % file
 
-    print("Thumbnails generated in %.1f seconds" % (time() - secs))
+    print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
     log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
     
     ###
@@ -340,7 +310,7 @@ if task["type"] == "extract":
     secs = time()
     os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
     os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
-    print("Cleanup in %.1f seconds" % (time() - secs))
+    print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
     log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
     ###
@@ -366,17 +336,17 @@ if task["type"] == "extract":
     secs = time()
     if os.path.isdir(dirpath):
       os.system("rm -rf '%s'" % dirpath)
-    print("Existing blobs deleted in %.1f seconds" % (time() - secs))
+    print("[ProcessTask] Existing blobs deleted in %.1f seconds" % (time() - secs))
     
-    # move files to cloud
+    # move files to target
     secs = time()
     os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
-    print("Copied to storage in %.1f seconds" % (time() - secs))
+    print("[ProcessTask] Copied to output folder in %.1f seconds" % (time() - secs))
     
     # cleanup
     if os.path.isdir(tmppath):
       os.system("rm -rf '%s'" % tmppath)
       
   else:
-    print("Blob %s doesn't exist !" % blob)
+    sys.exit("[ProcessTask] Blob %s doesn't exist !" % blob)
     

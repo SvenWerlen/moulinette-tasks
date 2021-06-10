@@ -19,6 +19,6 @@ then
     extract_dir="$2/$(basename "$1" .zip)"
 fi
 
-echo Extracting dir is $extract_dir
+echo "[Unzip] Extracting dir is $extract_dir"
 unzip -q -d "$extract_dir" "$1"
 
