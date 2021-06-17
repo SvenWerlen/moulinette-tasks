@@ -226,7 +226,7 @@ if task["type"] == "extract":
               # look for default location for scene image (same folder, same name) OR look for "img" in JSON
               image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
               if not os.path.isfile(image):
-                if "img" in data and len(data["img"]) > 0:
+                if "img" in data and data["img"] and len(data["img"]) > 0:
                   rootFolder = root[0:root.find('/', len(tmppath)+2)]
                   imagePath = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
                   # copy background image file near json file (required to match with thumbnail)
