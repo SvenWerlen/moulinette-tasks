@@ -262,7 +262,7 @@ if task["type"] == "extract":
                   # generate thumbnail
                   thumbPath = os.path.splitext(image)[0] + "_thumb.webp"
                   if not os.path.isfile(thumbPath):
-                    os.system("convert '%s' -thumbnail 400x400^ -gravity center -extent 400x400 '%s'" % (image, thumbPath))
+                    os.system('convert "%s" -thumbnail 400x400^ -gravity center -extent 400x400 "%s"' % (image, thumbPath))
             
                 if "thumb" in data:
                   del data['thumb']
@@ -308,8 +308,7 @@ if task["type"] == "extract":
     
     # delete original files, rename webp files and remove all non-supported files
     secs = time()
-    os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.gif -o -iname \*.jpeg \) -exec rm '{}' \;" % tmppath)
-    os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.json -exec rm '{}' \;" % tmppath)
+    os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -not -iname \*.json -exec rm '{}' \;" % tmppath)
     print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
     log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
