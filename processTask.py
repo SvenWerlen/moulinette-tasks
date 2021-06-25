@@ -51,6 +51,12 @@ if task["type"] == "extract":
     os.system("chmod -R 755 '%s'" % tmppath)
     
     ###
+    ### PRE CLEANUP
+    ### - remove all __MACOSX folders
+    ###
+    os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+    
+    ###
     ### PRE PROCESSING #1
     ### - extract information from any existing module
     ###
