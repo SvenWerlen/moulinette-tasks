@@ -248,7 +248,7 @@ if task["type"] == "extract":
                   continue
                 
               # if image path depends on another pack => don't generate thumbnail (assume it was done)
-              imgExternal = re.match("#DEP\d#", data["img"]) if "img" in data else None
+              imgExternal = re.match("#DEP\d#", data["img"]) if "img" in data and data["img"] else None
               if imgExternal or os.path.isfile(image):
                 print("[ProcessTask] - Scene %s ... " % file)
                 log += "- Scene %s ...\n" % file
@@ -314,7 +314,7 @@ if task["type"] == "extract":
     
     # delete original files, rename webp files and remove all non-supported files
     secs = time()
-    os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -not -iname \*.json -exec rm '{}' \;" % tmppath)
+    os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -not -iname \*.wav -not -iname \*.json -exec rm '{}' \;" % tmppath)
     print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
     log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
