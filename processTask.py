@@ -233,7 +233,8 @@ if task["type"] == "extract":
               image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
               if not os.path.isfile(image):
                 if "img" in data and data["img"] and len(data["img"]) > 0:
-                  rootFolder = root[0:root.find('/', len(tmppath)+2)]
+                  idx = root.find('/', len(tmppath)+2)
+                  rootFolder = root[0:idx] if idx >= 0 else root
                   imagePath = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
                   # copy background image file near json file (required to match with thumbnail)
                   if re.match("#DEP\d#", data["img"]):
@@ -253,7 +254,8 @@ if task["type"] == "extract":
                 print("[ProcessTask] - Scene %s ... " % file)
                 log += "- Scene %s ...\n" % file
               
-                rootFolder = root[0:root.find('/', len(tmppath)+2)]
+                idx = root.find('/', len(tmppath)+2)
+                rootFolder = root[0:idx] if idx >= 0 else root
                 imgPath = image[len(rootFolder)+1:]
                 
                 # support for video (webm/mp4) as image file (webp image also exists)
