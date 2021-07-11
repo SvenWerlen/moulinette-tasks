@@ -6,6 +6,7 @@ import json
 import zipfile
 import shutil
 from time import time
+from urllib.parse import unquote
 
 # Get required variable environment
 OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER')
@@ -235,7 +236,7 @@ if task["type"] == "extract":
                 if "img" in data and data["img"] and len(data["img"]) > 0:
                   idx = root.find('/', len(tmppath)+2)
                   rootFolder = root[0:idx] if idx >= 0 else root
-                  imagePath = os.path.join(rootFolder, data["img"].replace("#DEP#", ""))
+                  imagePath = unquote(os.path.join(rootFolder, data["img"].replace("#DEP#", "")))
                   # copy background image file near json file (required to match with thumbnail)
                   if re.match("#DEP\d#", data["img"]):
                     print("[ProcessTask] Thumbnail is not possible from external pack: %s" % data["img"])

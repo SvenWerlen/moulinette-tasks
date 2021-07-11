@@ -6,6 +6,11 @@ then
     exit 1
 fi
 
+##
+## Remove undesired __MACOSX files from zip
+##
+zip -d "$1" "__MACOSX*"
+
 extract_dir="$2"
 
 # Strip the leading and trailing information about the zip file (leaving
