@@ -90,4 +90,4 @@ def uploadPackFolder(client, containerName, path):
       if count % 100 == 0:
         print("[AZURELIB] - %d/%d files uploaded" % (count, total))
   
-  print("[AZURELIB] Upload in %.1f seconds" % (time() - secs))
+  print("[AZURELIB] %d assets uploaded in %.1f seconds" % (count, (time() - secs)))
