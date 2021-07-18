@@ -58,7 +58,7 @@ if task["type"] == "extract":
     os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
     
     ###
-    ### PRE PROCESSING #1
+    ### PRE PROCESSING #1.a
     ### - extract information from any existing module
     ###
     fvttModulePath = os.path.join(tmppath, dir, "module.json")
@@ -75,6 +75,25 @@ if task["type"] == "extract":
     
           config = {
             "depPath" : "modules/%s" % data["name"]
+          }
+          with open(configPath, 'w') as out:
+            json.dump(config, out)
+            
+    ###
+    ### PRE PROCESSING #1.b
+    ### - extract information from any existing module
+    ###
+    fvttWorldPath = os.path.join(tmppath, dir, "world.json")
+    
+    if os.path.isfile(fvttWorldPath) and not os.path.isfile(configPath):
+      with open(fvttWorldPath, 'r') as f:
+        data = json.load(f)
+        if "name" in data:
+          print("[ProcessTask] Foundry VTT world.json file found with name '%s'" % data["name"])
+          log += "Foundry VTT world.json file found with name '%s'\n" % data["name"]
+    
+          config = {
+            "depPath" : "worlds/%s" % data["name"]
           }
           with open(configPath, 'w') as out:
             json.dump(config, out)
