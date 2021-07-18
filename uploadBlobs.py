@@ -30,20 +30,22 @@ if not OUTPUT_FOLDER or not os.path.isdir(OUTPUT_FOLDER):
 if not os.path.isfile(os.path.join(TMP, TASKS_STATUS)):
   sys.exit("[UploadBlobs] no %s file found" % TASKS_STATUS)
 
-# Expected task information
-# Example: { "type": "extract", "data": { "blob": "test.zip" } }
 tasks = []
 with open(os.path.join(TMP, TASKS_STATUS)) as f:
   tasks = json.load(f)
 
 for task in tasks:
-  print("[UploadBlobs] Updating blobs for %s from task #%d" % (task["packFile"], task["id"]))
+  if task["status"] and task["status"] == "done":
+    print("[UploadBlobs] Updating blobs for %s from task #%d" % (task["packFile"], task["id"]))
 
-  client = BlobServiceClient(account_url="https://%s.blob.core.windows.net/" % AZURE_STORAGE_ACCOUNT, credential=AZURE_STORAGE_ACCESS_KEY)
-  folderPath = os.path.join(OUTPUT_FOLDER, task["container"], os.path.splitext(task["packFile"])[0])
+    client = BlobServiceClient(account_url="https://%s.blob.core.windows.net/" % AZURE_STORAGE_ACCOUNT, credential=AZURE_STORAGE_ACCESS_KEY)
+    folderPath = os.path.join(OUTPUT_FOLDER, task["container"], os.path.splitext(task["packFile"])[0])
 
-  # Delete pack if already exists in Azure
-  deletePack(client, task["container"], os.path.basename(folderPath))
+    # Delete pack if already exists in Azure
+    deletePack(client, task["container"], os.path.basename(folderPath))
 
-  # Upload all files for that pack
-  uploadPackFolder(client, task["container"], folderPath)
+    # Upload all files for that pack
+    uploadPackFolder(client, task["container"], folderPath)
+
+    # Delete all temp files
+    shutil.rmtree(folderPath)

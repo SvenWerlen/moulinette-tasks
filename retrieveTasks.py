@@ -18,11 +18,19 @@ MOULINETTE_SECRET_KEY = os.getenv('MOULINETTE_SECRET')  # Mouilnette secret key 
 
 # Constants
 TMP = "/tmp/"
+TASKS_FILE   = "moulinette-tasks.json"
+TASKS_STATUS = "moulinette-tasks-status.json"
 
 # Check environment variables
 if not MOULINETTE_API or not MOULINETTE_SECRET_KEY:
   sys.exit("[ProcessTasks] Missing environment variables")
 
+# Delete temp files
+if os.path.isfile(os.path.join(TMP, TASKS_FILE)):
+  os.remove(os.path.join(TMP, TASKS_FILE))
+if os.path.isfile(os.path.join(TMP, TASKS_STATUS)):
+  os.remove(os.path.join(TMP, TASKS_STATUS))
+  
 # Get authorization code
 response = requests.post(url = MOULINETTE_API + "/login", data = json.dumps({"secret" : MOULINETTE_SECRET_KEY}), headers = {"Content-Type": "application/json"})
 
@@ -37,6 +45,6 @@ response = requests.get(url = MOULINETTE_API + "/tasks" , headers = {"Content-Ty
 if response.status_code != 200:
   sys.exit("[ProcessTasks] Retrieval of tasks failed. " + response.text)
 
-with open(os.path.join(TMP, "moulinette-tasks.json"), "w") as outfile:
+with open(os.path.join(TMP, TASKS_FILE), "w") as outfile:
   json.dump(response.json(), outfile)
 
