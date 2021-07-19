@@ -35,7 +35,10 @@ tasks = []
 with open(os.path.join(TMP, TASKS_STATUS)) as f:
   tasks = json.load(f)
 
-for task in tasks:
+# Only process 1 task at a time
+if len(tasks) > 0:
+  task = tasks[0]
+  
   print("[CompleteTasks] Delete task #%d" % (task["id"]))
   
   response = requests.delete(url = MOULINETTE_API + "/task/%s" % task["id"], headers = {"Content-Type": "application/json", "Authorization": "Bearer " + token})

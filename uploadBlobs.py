@@ -34,7 +34,10 @@ tasks = []
 with open(os.path.join(TMP, TASKS_STATUS)) as f:
   tasks = json.load(f)
 
-for task in tasks:
+# Only process 1 task at a time
+if len(tasks) > 0:
+  task = tasks[0]
+  
   if task["status"] and task["status"] == "done":
     print("[UploadBlobs] Updating blobs for %s from task #%d" % (task["packFile"], task["id"]))
 

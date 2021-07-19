@@ -25,10 +25,13 @@ with open(os.path.join(TMP, TASKS_STATUS)) as f:
 
 url = DISCORD_HOOK
 
-for task in tasks:
+# Only process 1 task at a time
+if len(tasks) > 0:
+  task = tasks[0]
+  
   if task["status"] and task["status"] == "done":
-    content = {"username": "Tasks", "content": "Task #%d completed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
+    content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d completed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
   else:
-    content = {"username": "Tasks", "content": "Task #%d failed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
+    content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d failed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
     
   requests.post(url, data = content)

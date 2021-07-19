@@ -26,7 +26,9 @@ tasks = []
 with open(os.path.join(TMP, TASKS_FILE)) as f:
   tasks = json.load(f)
 
-for task in tasks:
+# Only process 1 task at a time
+if len(tasks) > 0:
+  task = tasks[0]
   
   print("[ProcessTasks] Processing task %s" % task["id"])
   
