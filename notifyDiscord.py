@@ -35,3 +35,4 @@ if len(tasks) > 0:
     content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d failed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
     
   requests.post(url, data = content)
+  

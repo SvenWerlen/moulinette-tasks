@@ -32,8 +32,169 @@ if len(tasks) > 0:
   
   print("[ProcessTasks] Processing task %s" % task["id"])
   
-  # TASK Extract
+  
   log = ""
+  
+  ############################################################################################################################
+  ################################## TASK BYOA ###############################################################################
+  ############################################################################################################################
+  if task["type"] == "byoa":
+    blob = task["packFile"]
+    container = task["container"]
+    filepath = os.path.join(OUTPUT_FOLDER, container, blob)
+    if os.path.isfile(filepath):
+      dir = os.path.splitext(os.path.basename(filepath))[0]
+      dirpath = os.path.join(OUTPUT_FOLDER, container, dir)
+      tmppath = os.path.join(TMP, "mtte")    
+      print("[ProcessTask] Processing '%s'" % blob)
+          
+      # prepare
+      if os.path.isdir(tmppath):
+        os.system("rm -rf '%s'" % tmppath)
+      os.mkdir(tmppath)
+      
+      # extract archive
+      secs = time()
+      if filepath.endswith(".zip"):
+        os.system("./sunzip.sh '%s' '%s'" % (filepath, tmppath))
+      elif filepath.endswith(".dungeondraft_pack"):
+        os.system("$GOPATH/bin/dungeondraft-unpack '%s' '%s'" % (filepath, tmppath))
+      else:
+        sys.exit("Invalid file %s" % filepath)
+      
+      print("[ProcessTask] Unzipped in %.1f seconds" % (time() - secs))
+      log += "Unzipped in %.1f seconds\n" % (time() - secs)
+      
+      # change permissions (just in case)
+      os.system("chmod -R 755 '%s'" % tmppath)
+      
+      ###
+      ### PRE CLEANUP
+      ### - remove all __MACOSX folders
+      ###
+      os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+      
+      ###
+      ### IMAGE CONVERSION
+      ### - converts all images to webp format
+      ### - generates thumbnails
+      ###
+      secs = time()
+      os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
+      print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
+      log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
+      
+      # POST PROCESSING
+      thumbsToDelete = []
+      for root, dirs, files in os.walk(tmppath):
+        for file in files:
+          
+          ###
+          ### VIDEO PROCESSING
+          ### - look for exising thumbnail
+          ###
+          if file.endswith(".webm") or file.endswith(".mp4"):
+            print("[ProcessTask] - Webm/mp4 %s ... " % file)
+            log += "- Webm/mp4 %s ...\n" % file
+            
+            thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
+            # thumbnail already exists
+            if os.path.isfile(thumb):
+              continue
+            
+            # look for a matching webp file
+            found = None
+            for f in os.listdir(root):
+              if not f.endswith(".webp"):
+                continue
+            
+            if found:
+              shutil.copyfile(found, thumb)
+              if not found in thumbsToDelete:
+                thumbsToDelete.append(found)
+            #else:
+            #  print("- No thumbnail found for %s ... " % file)
+            #  log += "- No thumbnail found for %s ...\n" % file
+            else:
+              print("[ProcessTask] - Generating thumbnail for video: %s" % file)
+              # try to generate a new thumbnail from the video
+              videoPath = os.path.join(root, file)
+              thumbFilename = os.path.join(root, os.path.splitext(file)[0])
+              os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
+              #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
+            
+      ###
+      ### Generate thumbnails if not exist
+      ###    
+      secs = time()
+      for root, dirs, files in os.walk(tmppath):
+        for file in files:
+          if file.endswith(".webp") and not "_thumb" in file:
+            thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+            if not os.path.isfile(thumbPath):
+              imagePath = os.path.join(root, file)
+              os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
+              if os.path.isfile(thumbPath):
+                print("[ProcessTask] - Thumbnail generated for %s" % file)
+                log += "- Thumbnail generated for %s\n" % file
+              else:
+                print("[ProcessTask] - Thumbnail NOT GENERATED as expected for %s" % file)
+                log += "- Thumbnail NOT GENERATED as expected for %s\n" % file
+
+      print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
+      log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
+      
+      ###
+      ### CLEANUP
+      ###
+      
+      # remove all thumbnails (to avoid them to appear in Foundry)
+      for t in thumbsToDelete:
+        os.remove(t)
+      
+      # delete original files, rename webp files and remove all non-supported files
+      secs = time()
+      os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -exec rm '{}' \;" % tmppath)
+      print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
+      log += "Cleanup in %.1f seconds\n" % (time() - secs)
+
+      folder = None
+      # find unique folder in tmp
+      for d in os.listdir(tmppath):
+        if os.path.isdir(os.path.join(tmppath, d)):
+          folder = d
+          break
+      
+      if folder:
+        logPath = os.path.join(tmppath, folder, "info.log")
+        with open(logPath, 'w') as out:
+          out.write(log)
+      
+      # clear existing blobs (if any)
+      secs = time()
+      if os.path.isdir(dirpath):
+        os.system("rm -rf '%s'" % dirpath)
+      print("[ProcessTask] Existing blobs deleted in %.1f seconds" % (time() - secs))
+      
+      # move files to target
+      secs = time()
+      os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
+      print("[ProcessTask] Copied to output folder in %.1f seconds" % (time() - secs))
+      
+      # cleanup
+      if os.path.isdir(tmppath):
+        os.system("rm -rf '%s'" % tmppath)
+        
+      # update task status
+      task["status"] = "done"
+        
+    else:
+      print("[ProcessTask] PackFile %s doesn't exist ! Skipping..." % blob)
+      task["status"] = "failed"
+      
+  ############################################################################################################################
+  ################################## TASK Extract ############################################################################
+  ############################################################################################################################
   if task["type"] == "extract":
     blob = task["packFile"]
     container = task["container"]

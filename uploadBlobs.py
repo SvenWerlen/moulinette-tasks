@@ -6,7 +6,9 @@ import sys
 import json
 import shutil
 import requests
+import boto3
 from azurelib import deletePack, uploadPackFolder
+from s3lib import deleteS3Pack, uploadS3PackFolder
 from azure.storage.blob import BlobServiceClient, AccountSasPermissions, ResourceTypes, generate_account_sas, generate_container_sas
 
 # Get required environment variables
@@ -14,12 +16,16 @@ OUTPUT_FOLDER            = os.getenv('OUTPUT_FOLDER')             # Output folde
 AZURE_STORAGE_ACCOUNT    = os.getenv('AZURE_STORAGE_ACCOUNT')     # Azure storage account
 AZURE_STORAGE_ACCESS_KEY = os.getenv('AZURE_STORAGE_ACCESS_KEY')  # Azure storage access key
 
+S3_STORAGE_ACCOUNT    = os.getenv('S3_STORAGE_ACCOUNT')     # S3 storage account
+S3_STORAGE_ACCESS_KEY = os.getenv('S3_STORAGE_ACCESS_KEY')  # S3 storage access key
+
+
 # Constants
 TASKS_STATUS = "moulinette-tasks-status.json"
 TMP = "/tmp/"
 
 # Check environment variables
-if not AZURE_STORAGE_ACCOUNT or not AZURE_STORAGE_ACCESS_KEY:
+if not AZURE_STORAGE_ACCOUNT or not AZURE_STORAGE_ACCESS_KEY or not S3_STORAGE_ACCOUNT or not S3_STORAGE_ACCESS_KEY:
   sys.exit("[UploadBlobs] environment variables missing")
 
 # Check output folder
@@ -39,16 +45,52 @@ if len(tasks) > 0:
   task = tasks[0]
   
   if task["status"] and task["status"] == "done":
-    print("[UploadBlobs] Updating blobs for %s from task #%d" % (task["packFile"], task["id"]))
+    
+    ############################################################################################################################
+    ################################## TASK BYOA ###############################################################################
+    ############################################################################################################################
+    if task["type"] == "byoa":
+      print("[UploadBlobs] Updating blobs for %s from task #%d" % (task["packFile"], task["id"]))
 
-    client = BlobServiceClient(account_url="https://%s.blob.core.windows.net/" % AZURE_STORAGE_ACCOUNT, credential=AZURE_STORAGE_ACCESS_KEY)
-    folderPath = os.path.join(OUTPUT_FOLDER, task["container"], os.path.splitext(task["packFile"])[0])
+      session = boto3.session.Session()
+      client = session.client('s3',
+        region_name='nyc3',
+        endpoint_url='https://nyc3.digitaloceanspaces.com',
+        aws_access_key_id=S3_STORAGE_ACCOUNT,
+        aws_secret_access_key=S3_STORAGE_ACCESS_KEY)
 
-    # Delete pack if already exists in Azure
-    deletePack(client, task["container"], os.path.basename(folderPath))
+      bucketName = "mtte" + task["container"]
+      try:
+        client.head_bucket(Bucket=bucketName)
+      except: 
+        client.create_bucket(Bucket=bucketName)
 
-    # Upload all files for that pack
-    uploadPackFolder(client, task["container"], folderPath)
+      folderPath = os.path.join(OUTPUT_FOLDER, task["container"], os.path.splitext(task["packFile"])[0])
 
-    # Delete all temp files
-    shutil.rmtree(folderPath)
+      # Delete pack if already exists in Azure
+      deleteS3Pack(client, bucketName, os.path.basename(folderPath))
+
+      # Upload all files for that pack
+      uploadS3PackFolder(client, bucketName, folderPath)
+
+      # Delete all temp files
+      shutil.rmtree(folderPath)
+
+    ############################################################################################################################
+    ################################## TASK Extract ############################################################################
+    ############################################################################################################################
+    elif task["type"] == "extract":
+    
+      print("[UploadBlobs] Updating blobs for %s from task #%d" % (task["packFile"], task["id"]))
+
+      client = BlobServiceClient(account_url="https://%s.blob.core.windows.net/" % AZURE_STORAGE_ACCOUNT, credential=AZURE_STORAGE_ACCESS_KEY)
+      folderPath = os.path.join(OUTPUT_FOLDER, task["container"], os.path.splitext(task["packFile"])[0])
+
+      # Delete pack if already exists in Azure
+      deletePack(client, task["container"], os.path.basename(folderPath))
+
+      # Upload all files for that pack
+      uploadPackFolder(client, task["container"], folderPath)
+
+      # Delete all temp files
+      shutil.rmtree(folderPath)
