@@ -9,7 +9,7 @@ import boto3
 def deleteS3Pack(client, bucketName, packname):
   secs = time()
   
-  response = client.list_objects(Bucket=bucketName,Prefix=packname)
+  response = client.list_objects(Bucket=bucketName,Prefix=packname + "/")
   if not 'Contents' in response:
     return 0
 
