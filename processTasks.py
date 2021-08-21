@@ -537,7 +537,6 @@ if len(tasks) > 0:
       secs = time()
       if os.path.isdir(dirpath):
         os.system("rm -rf '%s'" % dirpath)
-      print("[ProcessTask] Existing blobs deleted in %.1f seconds" % (time() - secs))
       
       # move files to target
       secs = time()
