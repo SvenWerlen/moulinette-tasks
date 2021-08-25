@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+source environment.sh
+
 LOCK=/tmp/moulinette-tasks.lock
 
 # check if process already running
@@ -12,7 +14,6 @@ fi
 # add lock
 touch $LOCK
 
-source environment.sh
 python3 ./retrieveTasks.py
 python3 ./processTasks.py
 python3 ./uploadBlobs.py
