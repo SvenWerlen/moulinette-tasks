@@ -3,7 +3,7 @@ import sys
 import time
 import requests
 
-MAX_TIME=45
+MAX_TIME=90
 
 if len(sys.argv) >= 2:
   lockFile = sys.argv[1]

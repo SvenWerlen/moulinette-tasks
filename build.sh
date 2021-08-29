@@ -1,6 +1,4 @@
 #!/bin/bash
-set -e
-
 source environment.sh
 
 JSON=/tmp/moulinette-tasks.json
@@ -18,11 +16,14 @@ touch $LOCK
 CONTINUE=true
 while $CONTINUE
 do
-    python3 ./retrieveTasks.py
-    python3 ./processTasks.py
-    python3 ./uploadBlobs.py
-    python3 ./completeTasks.py
-    python3 ./notifyDiscord.py
+    OK=true
+
+    if [ "$OK" = true ]; then python3 ./retrieveTasks.py || OK=false; fi
+    if [ "$OK" = true ]; then python3 ./processTasks.py || OK=false; fi
+    if [ "$OK" = true ]; then python3 ./uploadBlobs.py || OK=false; fi
+
+    python3 ./completeTasks.py $OK
+    python3 ./notifyDiscord.py $OK
 
     # check that there is no task any more.
     # If output size = 2 that means that list is []

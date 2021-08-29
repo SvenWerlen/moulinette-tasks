@@ -11,6 +11,11 @@ DISCORD_HOOK = os.getenv('DISCORD_HOOK')
 TASKS_STATUS = "moulinette-tasks-status.json"
 TMP = "/tmp/"
 
+# Check parameters
+if len(sys.argv) != 2:
+  sys.exit("[CompleteTasks] Missing status")
+OK = sys.argv[1]
+
 # Check environment variables
 if not OUTPUT_FOLDER or not DISCORD_HOOK:
   sys.exit("[NotifyDiscord] Missing environment variables")
@@ -29,7 +34,9 @@ url = DISCORD_HOOK
 if len(tasks) > 0:
   task = tasks[0]
   
-  if task["status"] and task["status"] == "done":
+  if not OK:
+    content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d failed unexpectedly for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
+  elif task["status"] and task["status"] == "done":
     content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d completed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
   else:
     content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d failed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}

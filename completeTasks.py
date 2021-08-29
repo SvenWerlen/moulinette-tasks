@@ -14,6 +14,11 @@ TASK_ID               = os.getenv('TASK_ID')            # Task ID to process (pr
 TASKS_STATUS = "moulinette-tasks-status.json"
 TMP = "/tmp/"
 
+# Check parameters
+if len(sys.argv) != 2:
+  sys.exit("[CompleteTasks] Missing status")
+OK = sys.argv[1]
+
 # Check environment variables
 if not MOULINETTE_API or not MOULINETTE_SECRET_KEY:
   sys.exit("[CompleteTasks] Missing environment variables")
@@ -40,9 +45,17 @@ if len(tasks) > 0:
   task = tasks[0]
   
   print("[CompleteTasks] Delete task #%d" % (task["id"]))
-  
-  response = requests.delete(url = MOULINETTE_API + "/task/%s" % task["id"], headers = {"Content-Type": "application/json", "Authorization": "Bearer " + token})
-  if response.status_code != 200:
-    sys.exit("[CompleteTasks] Task deletion failed. " + response.text)
+
+  if OK and task["status"] and task["status"] == "done":
+
+    newSize = task["newSize"] if "newSize" in task else 0
+    response = requests.delete(url = MOULINETTE_API + "/task/%s/%s" % (task["id"], newSize), headers = {"Content-Type": "application/json", "Authorization": "Bearer " + token})
+    if response.status_code != 200:
+      sys.exit("[CompleteTasks] Task deletion failed. " + response.text)
+
+  else:
+    response = requests.put(url = MOULINETTE_API + "/task/%s/failed" % (task["id"]), headers = {"Content-Type": "application/json", "Authorization": "Bearer " + token})
+    if response.status_code != 200:
+      sys.exit("[CompleteTasks] Task status update failed. " + response.text)
 
 
