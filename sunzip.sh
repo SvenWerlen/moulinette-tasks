@@ -1,7 +1,5 @@
 #!/bin/bash
 
-TMPZIP="/tmp/arch.zip"
-
 if [ $# -ne 2 ] || ! [ -f "$1" ]
 then
     printf '%s\n' "Expected a filename as the first argument and target folder as second argument only. Aborting."
@@ -9,24 +7,25 @@ then
 fi
 
 ##
+## Unzip
+##
+echo "Unziping $1"
+unzip -q -d "$2" "$1"
+echo "Done."
+
+##
 ## Remove undesired __MACOSX files from zip
 ##
-cp "$1" "$TMPZIP"
-zip -d "$TMPZIP" "__MACOSX*"
+find $2 -name "__MACOSX*" -exec rm -rf {} \;
 
-extract_dir="$2"
+##
+## Create subfolder if files at root
+##
+FILES=$(find /tmp/mtte/ -maxdepth 1 -type f | wc -l)
 
-# Strip the leading and trailing information about the zip file (leaving
-# only the lines with filenames), then check to make sure *all* filenames
-# contain a /.
-# If any file doesn't contain a / (i.e. is not located in a directory or is
-# a directory itself), exit with a failure code to trigger creating a new
-# directory for the extraction.
-if ! unzip -l "$TMPZIP" | tail -n +4 | head -n -2 | awk 'BEGIN {lastprefix = ""} {if (match($4, /[^/]+/)) {prefix=substr($4, RSTART, RLENGTH); if (lastprefix != "" && prefix != lastprefix) {exit 1}; lastprefix=prefix}}'
-then
-    extract_dir="$2/$(basename "$1" .zip)"
+if [ ! "$FILES" -eq "0" ]; then
+  subfolder="$2/$(basename "$1" .zip)"
+  echo "Moving all files to $subfolder..."
+  mkdir "$subfolder"
+  mv "$2"/* "$subfolder"/
 fi
-
-echo "[Unzip] Extracting dir is $extract_dir"
-unzip -q -d "$extract_dir" "$TMPZIP"
-rm -f "$TMPZIP"
