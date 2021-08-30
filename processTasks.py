@@ -571,7 +571,7 @@ if len(tasks) > 0:
       secs = time()
       if os.path.isdir(dirpath):
         os.system("rm -rf '%s'" % dirpath)
-      
+
       # move files to target
       secs = time()
       os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
