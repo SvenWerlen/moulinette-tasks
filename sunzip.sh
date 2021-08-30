@@ -11,6 +11,7 @@ fi
 ##
 echo "Unziping $1"
 unzip -q -d "$2" "$1"
+chmod -R 755 "$2"
 echo "Done."
 
 ##
@@ -21,11 +22,11 @@ find $2 -name "__MACOSX*" -exec rm -rf {} \;
 ##
 ## Create subfolder if files at root
 ##
-FILES=$(find /tmp/mtte/ -maxdepth 1 -type f | wc -l)
+FILES=$(find $2 -maxdepth 1 -type f | wc -l)
 
 if [ ! "$FILES" -eq "0" ]; then
   subfolder="$2/$(basename "$1" .zip)"
   echo "Moving all files to $subfolder..."
   mkdir "$subfolder"
-  mv "$2"/* "$subfolder"/
+  mv "$2"/* "$subfolder/"
 fi

@@ -576,7 +576,7 @@ if len(tasks) > 0:
       secs = time()
       os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
       print("[ProcessTask] Copied to output folder in %.1f seconds" % (time() - secs))
-      
+
       # cleanup
       if os.path.isdir(tmppath):
         os.system("rm -rf '%s'" % tmppath)
