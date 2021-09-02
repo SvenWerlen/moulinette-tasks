@@ -170,7 +170,7 @@ if len(tasks) > 0:
       
       # delete original files, rename webp files and remove all non-supported files
       secs = time()
-      os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -exec rm '{}' \;" % tmppath)
+      os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -exec rm '{}' \;" % tmppath)
       print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
       log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
