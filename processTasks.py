@@ -100,6 +100,34 @@ if len(tasks) > 0:
       print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
       log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
       
+      ###
+      ### PRE PROCESSING
+      ### - simple maps (when "maps.mtte" file is added to pack)
+      ###
+      cfg = None
+      if os.path.isfile(os.path.join(tmppath, dir, "maps.mtte")):
+        for root, dirs, files in os.walk(os.path.join(tmppath, dir)):
+          for file in files:
+            if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
+              print("[ProcessTask] - Map generation for %s ... " % file)
+              log += "- Map generation for %s ...\n" % file
+
+              map = os.path.join(root, os.path.splitext(file)[0] + ".json")
+              name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
+              name = ' '.join(elem.capitalize() for elem in name.split())
+              data = {
+                "name": name,
+                "navigation": False,
+                "img": "#DEP#" + os.path.splitext(file)[0] + ".webp"
+              }
+              # generate thumbnail
+              imgPath = os.path.join(root, file)
+              thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+              os.system('convert "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (imgPath, thumbPath))
+
+              with open(os.path.join(root, map), "w") as fw:
+                fw.write(json.dumps(data, separators=(',', ':')))
+
       # POST PROCESSING
       thumbsToDelete = []
       for root, dirs, files in os.walk(tmppath):
@@ -161,7 +189,8 @@ if len(tasks) > 0:
                   os.remove(os.path.join(root, file))
                   continue
 
-                shutil.copyfile(image, thumb) # avoid thumbnail being generated
+                if not os.path.isfile(thumb):
+                  shutil.copyfile(image, thumb) # avoid thumbnail being generated
 
               # compress JSON
               with open(os.path.join(root, file), "w") as fw:
