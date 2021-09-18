@@ -138,6 +138,35 @@ if len(tasks) > 0:
               thumbFilename = os.path.join(root, os.path.splitext(file)[0])
               os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
               #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
+
+          ###
+          ### MAPS PROCESSING (JSON)
+          ### - look for matching image (or delete)
+          ###
+          if file.endswith(".json"):
+            with open(os.path.join(root, file), "r") as f:
+              content = f.read().replace('\n', '')
+
+              # make sure that all assets are in webp format
+              content = re.sub(r'"(#DEP[^"]*).(?:png|jpg|gif|jpeg)"', '"\g<1>.webp"', content)
+
+              data = json.loads(content)
+              if "navigation" in data:
+                # look for default location for scene image (same folder, same name)
+                image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
+                thumb = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+                if not os.path.isfile(image):
+                  print("[ProcessTask] - Map %s with missing thumbnail. Skipped" % file)
+                  log += "- Map %s with missing thumbnail. Skipped\n" % file
+                  os.remove(os.path.join(root, file))
+                  continue
+
+                shutil.copyfile(image, thumb) # avoid thumbnail being generated
+
+              # compress JSON
+              with open(os.path.join(root, file), "w") as fw:
+                fw.write(json.dumps(data, separators=(',', ':')))
+
             
       ###
       ### Generate thumbnails if not exist
@@ -170,7 +199,7 @@ if len(tasks) > 0:
       
       # delete original files, rename webp files and remove all non-supported files
       secs = time()
-      os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -exec rm '{}' \;" % tmppath)
+      os.system("find '%s' -type f -not -iname \*.json -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -exec rm '{}' \;" % tmppath)
       print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
       log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
