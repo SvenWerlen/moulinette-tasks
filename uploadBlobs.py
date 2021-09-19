@@ -11,12 +11,6 @@ import logging
 from azure.storage.blob import BlobServiceClient
 from moulinette_utils.storage.azure import MoulinetteStorageAzure
 
-#import boto3
-
-#from azurelib import deletePack, uploadPackFolder
-#from s3lib import deleteS3Pack, uploadS3PackFolder
-#from azure.storage.blob import BlobServiceClient, AccountSasPermissions, ResourceTypes, generate_account_sas, generate_container_sas
-
 # Get required environment variables
 OUTPUT_FOLDER            = os.getenv('OUTPUT_FOLDER')             # Output folder (where to download the pack)
 AZURE_STORAGE_ACCOUNT    = os.getenv('AZURE_STORAGE_ACCOUNT')     # Azure storage account
