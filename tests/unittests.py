@@ -49,6 +49,9 @@ class TestS3(unittest.TestCase):
     self.assertEqual(len(assets["data"]), 1)
     self.assertEqual(assets["size"], 481439)
 
+    self.assertIsNotNone(storage.getAsset("testpack/some-scene.json"))
+    self.assertIsNone(storage.getAsset("testpack/some-scene-invalid.json"))
+
     deleted2 = storage.deleteAssets("testpack.zip")
     self.assertEqual(deleted2, 4)
 
