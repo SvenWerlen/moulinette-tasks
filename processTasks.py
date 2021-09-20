@@ -11,6 +11,7 @@ from processTasksScenePacker import *
 
 # Get required variable environment
 OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER')
+PREVIEW_FOLDER = os.getenv('PREVIEW_FOLDER')
 TASKS_FILE   = "moulinette-tasks.json"
 TASKS_STATUS = "moulinette-tasks-status.json"
 TMP = "/tmp/"
@@ -604,6 +605,24 @@ if len(tasks) > 0:
         os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -not -iname \*.wav -not -iname \*.json -exec rm '{}' \;" % tmppath)
         print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
         log += "Cleanup in %.1f seconds\n" % (time() - secs)
+
+        ###
+        ### Generate watermarked versions
+        ###
+        secs = time()
+        for root, dirs, files in os.walk(tmppath):
+          for file in files:
+            if file.endswith(".webp") and not "_thumb" in file:
+              baseDir = os.path.join(TMP, "mtte")
+              basePath = os.path.join(root, file)[len(baseDir)+1:]
+              wmPath = os.path.join(PREVIEW_FOLDER, container, basePath)
+              if not os.path.isdir(os.path.dirname(wmPath)):
+                os.makedirs(os.path.dirname(wmPath))
+              os.system('convert "%s" -resize 100x100 /tmp/img.webp' % (os.path.join(root,file)))
+              os.system('composite watermark.png /tmp/img.webp -gravity North "%s"' % (wmPath))
+
+        print("[ProcessTask] Watermarked images generated in %.1f seconds" % (time() - secs))
+        log += "Watermarked images generated in %.1f seconds\n" % (time() - secs)
 
         ###
         ### LOG
