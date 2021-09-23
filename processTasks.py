@@ -635,6 +635,9 @@ if len(tasks) > 0:
                 os.system('convert "%s" -resize 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
                 os.system('composite watermark-map.png /tmp/img.webp -gravity North "%s"' % (wmPath))
 
+        # chg permissions
+        os.system('chmod 775 -R %s' % (os.path.join(PREVIEW_FOLDER, container))
+
         print("[ProcessTask] Watermarked images generated in %.1f seconds" % (time() - secs))
         log += "Watermarked images generated in %.1f seconds\n" % (time() - secs)
 
