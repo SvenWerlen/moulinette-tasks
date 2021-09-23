@@ -618,8 +618,22 @@ if len(tasks) > 0:
               wmPath = os.path.join(PREVIEW_FOLDER, container, basePath)
               if not os.path.isdir(os.path.dirname(wmPath)):
                 os.makedirs(os.path.dirname(wmPath))
-              os.system('convert "%s" -resize 100x100 /tmp/img.webp' % (os.path.join(root,file)))
+              os.system('convert "%s" -resize 100x100^ /tmp/img.webp' % (os.path.join(root,file)))
               os.system('composite watermark.png /tmp/img.webp -gravity North "%s"' % (wmPath))
+
+        # maps
+        for root, dirs, files in os.walk(tmppath):
+          for file in files:
+            if file.endswith(".json"):
+              imgPath = os.path.splitext(file)[0] + ".webp"
+              if os.path.isfile( os.path.join(root, imgPath) ):
+                baseDir = os.path.join(TMP, "mtte")
+                basePath = os.path.join(root, imgPath)[len(baseDir)+1:]
+                wmPath = os.path.join(PREVIEW_FOLDER, container, basePath)
+                if not os.path.isdir(os.path.dirname(wmPath)):
+                  os.makedirs(os.path.dirname(wmPath))
+                os.system('convert "%s" -resize 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
+                os.system('composite watermark-map.png /tmp/img.webp -gravity North "%s"' % (wmPath))
 
         print("[ProcessTask] Watermarked images generated in %.1f seconds" % (time() - secs))
         log += "Watermarked images generated in %.1f seconds\n" % (time() - secs)
