@@ -23,8 +23,8 @@ STATIC_FOLDER     = os.environ["STATIC_FOLDER"]
 STATIC_AVAIL      = "available.json"
 STATIC_AVAIL_SC   = "available-scenes.json"
 
-BLOB_ACCOUNT_NAME = os.environ['BLOB_NAME'] # Azure Blob storage account name
-BLOB_ACCOUNT_KEY  = os.environ['BLOB_KEY']  # Azure Blob storage account key
+BLOB_ACCOUNT_NAME = os.environ['AZURE_STORAGE_ACCOUNT']    # Azure Blob storage account name
+BLOB_ACCOUNT_KEY  = os.environ['AZURE_STORAGE_ACCESS_KEY'] # Azure Blob storage account key
 
 
 blobService = BlobServiceClient(account_url="https://%s.blob.core.windows.net/" % BLOB_ACCOUNT_NAME, credential=BLOB_ACCOUNT_KEY)
