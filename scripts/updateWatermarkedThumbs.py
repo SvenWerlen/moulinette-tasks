@@ -113,6 +113,11 @@ for c in data:
     if len(packMaps['assets']) > 0:
       pubMaps.append(packMaps)
 
+  if len(pub) > 0:
+    pubs[c["publisher"]] = pub
+  if len(pubMaps) > 0:
+    pubsMaps[c["publisher"]] = pubMaps
+
 with open(os.path.join(STATIC_FOLDER, STATIC_AVAIL), "w") as outfile:
   json.dump(pubs, outfile)
 with open(os.path.join(STATIC_FOLDER, STATIC_AVAIL_SC), "w") as outfile:
