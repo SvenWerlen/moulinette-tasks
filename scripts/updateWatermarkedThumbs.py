@@ -59,6 +59,8 @@ pubs = {}
 pubsMaps = {}
 
 for c in data:
+  pub = []
+  pubMaps = []
 
   for p in c["packs"]:
     path = p["path"].split("mttecloudstorage.blob.core.windows.net/").pop()
