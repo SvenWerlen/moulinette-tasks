@@ -91,9 +91,10 @@ for c in data:
               os.system('convert "%s" -resize 400x400^ "%s"' % (TMP_THUMB, TMP_THUMB2))
               os.system('composite ../watermark-map.png "%s" -gravity North "%s"' % (TMP_THUMB2, thumbPath))
               print("[M] %s/%s" % (container, blob))
-              packMaps['assets'].append("%s/%s" % (path, thumb))
             else:
               print("[MISSING] %s/%s" % (container, blob))
+              continue
+          packMaps['assets'].append("%s/%s" % (path, thumb))
 
       # regular assets
       else:
@@ -104,9 +105,10 @@ for c in data:
               os.system('convert "%s" -resize 100x100^ "%s"' % (TMP_THUMB, TMP_THUMB2))
               os.system('composite ../watermark.png "%s" -gravity North "%s"' % (TMP_THUMB2, thumbPath))
               print("[A] %s/%s" % (container, blob))
-              pack['assets'].append("%s/%s" % (path, thumb))
             else:
               print("[MISSING] %s/%s" % (container, blob))
+              continue
+          pack['assets'].append("%s/%s" % (path, thumb))
 
     if len(pack['assets']) > 0:
       pub.append(pack)
