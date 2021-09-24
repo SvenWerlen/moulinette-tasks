@@ -69,16 +69,16 @@ for c in data:
     packName = path.split("/")[1]
     pack = { 'id': p['id'], 'name': p['name'], 'assets': [] }
     packMaps = { 'id': p['id'], 'name': p['name'], 'assets': [] }
-
     dir = "%s/%s" % (THUMB_FOLDER, path)
-    if not os.path.isdir(dir):
-      os.makedirs(dir)
 
     for a in p["assets"]:
 
       thumb = (os.path.splitext(a["img"])[0] if isinstance(a, dict) else os.path.splitext(a)[0]) + "_thumb.webp"
       fIndex = thumb.rfind("/")
       thumbPath = os.path.join(dir, thumb)
+
+      if not os.path.isdir(os.path.dirname(thumbPath)):
+        os.makedirs(os.path.dirname(thumbPath))
 
       # maps
       if isinstance(a, dict):
