@@ -25,12 +25,9 @@ find $2 -name "__MACOSX*" -exec rm -rf {} \;
 FILES=$(find $2 -maxdepth 1 -type f | wc -l)
 DIRS=$(find $2 -maxdepth 1 -type d | wc -l)
 
-if [ ! "$FILES" -eq "0" ] || [ ! "$DIRS" -eq "1" ]; then
+if [ ! "$FILES" -eq "0" ] || [ ! "$DIRS" -eq "2" ]; then
   subfolder="$2/$(basename "$1" .zip)"
   echo "Moving all files to $subfolder..."
   mkdir "$subfolder"
   mv "$2"/* "$subfolder/"
 fi
-
-
-
