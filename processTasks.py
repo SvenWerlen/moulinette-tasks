@@ -88,8 +88,10 @@ if len(tasks) > 0:
       ###
       ### PRE CLEANUP
       ### - remove all __MACOSX folders
+      ### - remove all files larger than 20 MB
       ###
       os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+      os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -rf {} \;" % tmppath)
       
       ###
       ### IMAGE CONVERSION
@@ -304,8 +306,10 @@ if len(tasks) > 0:
       ###
       ### PRE CLEANUP
       ### - remove all __MACOSX folders
+      ### - remove all files larger than 20 MB
       ###
       os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+      os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -rf {} \;" % tmppath)
       
       ###
       ### SCENE PACKER
@@ -396,6 +400,32 @@ if len(tasks) > 0:
               target = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
               os.rename(source, target)
 
+        # load configuration if exists
+        cfg = None
+        if os.path.isfile(configPath):
+          with open(configPath, "r") as f:
+            cfg = json.load(f)
+        else:
+          print("[ProcessTask] No configuration file found!")
+          log += "No configuration file found!\n"
+
+        ###
+        ### PRE PROCESSING #4 (maps based on specific extension : introduced for PogsProps)
+        ###
+        if cfg and "maps" in cfg and cfg["maps"].find("*") == 0:
+          for root, dirs, files in os.walk(os.path.join(tmppath, dir)):
+            for file in files:
+              if file.endswith(cfg["maps"][1:]):
+                map = os.path.join(root, os.path.splitext(file)[0] + ".json")
+                name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
+                name = ' '.join(elem.capitalize() for elem in name.split())
+                data = {
+                  "name": name,
+                  "navigation": False
+                }
+                with open(os.path.join(root, map), "w") as fw:
+                  fw.write(json.dumps(data, separators=(',', ':')))
+
         ###
         ### IMAGE CONVERSION
         ### - converts all images to webp format
@@ -406,20 +436,11 @@ if len(tasks) > 0:
         print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
         log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
 
-        # load configuration if exists
-        cfg = None
-        if os.path.isfile(configPath):
-          with open(configPath, "r") as f:
-            cfg = json.load(f)
-        else:
-          print("[ProcessTask] No configuration file found!")
-          log += "No configuration file found!\n"
-
 
         ###
         ### GENERATE MAPS FROM IMAGE or VIDEO
         ###
-        if cfg and "maps" in cfg:
+        if cfg and "maps" in cfg and cfg["maps"].find("*") < 0:
           for root, dirs, files in os.walk(os.path.join(tmppath, dir, cfg["maps"])):
             for file in files:
               if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
