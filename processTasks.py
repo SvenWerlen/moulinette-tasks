@@ -544,7 +544,13 @@ if len(tasks) > 0:
                         print("[ProcessTask] Thumbnail is not possible from external pack: %s" % data["img"])
                         image = imagePath
                       elif os.path.isfile(imagePath):
-                        shutil.copyfile(imagePath, image)
+                        srcExt = os.path.splitext(imagePath)[1]
+                        # special case for animated maps. Also copy the webm/mp4 file
+                        if srcExt in [".webm", ".mp4"]:
+                          shutil.copyfile(imagePath, os.path.join(root, os.path.splitext(file)[0] + srcExt))
+                          shutil.copyfile(os.path.splitext(imagePath)[0] + ".webp", image)
+                        else:
+                          shutil.copyfile(imagePath, image)
                       else:
                         print("[ProcessTask] - No match and image %s doesn't exist" % imagePath)
                         log += "[ProcessTask] - No match and image %s doesn't exist" % imagePath
