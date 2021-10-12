@@ -82,6 +82,15 @@ if len(tasks) > 0:
       print("[ProcessTask] Unzipped in %.1f seconds" % (time() - secs))
       log += "Unzipped in %.1f seconds\n" % (time() - secs)
       
+      # update dir if doesn't match zip name (default)
+      dirs = os.listdir(tmppath)
+      if len(dirs) == 1 and os.path.isdir(os.path.join(tmppath, dirs[0])):
+        dir = dirs[0]
+        dirpath = os.path.join(OUTPUT_FOLDER, container, dir)
+        print("[ProcessTask] Directory is '%s'" % dir)
+      else:
+        print("[ProcessTask] Something wrong with dirs", dirs)
+
       # change permissions (just in case)
       os.system("chmod -R 755 '%s'" % tmppath)
       
@@ -296,7 +305,16 @@ if len(tasks) > 0:
         os.system("$GOPATH/bin/dungeondraft-unpack '%s' '%s'" % (filepath, tmppath))
       else:
         sys.exit("Invalid file %s" % filepath)
-      
+
+      # update dir if doesn't match zip name (default)
+      dirs = os.listdir(tmppath)
+      if len(dirs) == 1 and os.path.isdir(os.path.join(tmppath, dirs[0])):
+        dir = dirs[0]
+        dirpath = os.path.join(OUTPUT_FOLDER, container, dir)
+        print("[ProcessTask] Directory is '%s'" % dir)
+      else:
+        print("[ProcessTask] Something wrong with dirs", dirs)
+
       print("[ProcessTask] Unzipped in %.1f seconds" % (time() - secs))
       log += "Unzipped in %.1f seconds\n" % (time() - secs)
       
