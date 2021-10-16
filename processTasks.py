@@ -314,6 +314,7 @@ if len(tasks) > 0:
       ###
       ### SCENE PACKER
       ###
+      task["packer"] = False
       if os.path.isfile( os.path.join(tmppath, dir, "scene-packer.info") ):
         print("[ProcessTask] Scene Packer identified.")
         task["packer"] = True
