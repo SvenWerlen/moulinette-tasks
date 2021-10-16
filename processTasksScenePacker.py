@@ -2,7 +2,7 @@ import os
 import logging
 
 from libs.jsonUtils import fileToJson, jsonToFile
-from libs.mediaUtils import generateThumnail
+from libs.mediaUtils import convertImage, generateThumnail
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,8 @@ def processScenePacker(tmppath, dir):
     srcThumb = os.path.join(tmppath, dir, "data", sc["thumb"])
     thumbFilename = os.path.basename(sc["thumb"])
 
-    destPath = os.path.join(tmppath, dir, "mtte", os.path.splitext(thumbFilename)[0] + ".webp")
-    generateThumnail(srcThumb, destPath)
+    destPath = os.path.join(tmppath, dir, "mtte", os.path.splitext(thumbFilename)[0] + "_thumb.webp")
+    convertImage(srcThumb, destPath)
 
     # add scene to main info
     del(sc["thumb"])
