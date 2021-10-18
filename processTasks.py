@@ -131,7 +131,7 @@ if len(tasks) > 0:
               with open(os.path.join(root, map), "w") as fw:
                 fw.write(json.dumps(data, separators=(',', ':')))
 
-      # POST PROCESSING
+      # POST PROCESSING #1
       thumbsToDelete = []
       for root, dirs, files in os.walk(tmppath):
         for file in files:
@@ -169,6 +169,10 @@ if len(tasks) > 0:
               thumbFilename = os.path.join(root, os.path.splitext(file)[0])
               os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
               #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
+
+      # POST PROCESSING #2
+      for root, dirs, files in os.walk(tmppath):
+        for file in files:
 
           ###
           ### MAPS PROCESSING (JSON)
