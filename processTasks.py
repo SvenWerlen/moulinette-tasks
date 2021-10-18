@@ -187,10 +187,16 @@ if len(tasks) > 0:
                 image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
                 thumb = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
                 if not os.path.isfile(image):
-                  print("[ProcessTask] - Map %s with missing thumbnail. Skipped" % file)
-                  log += "- Map %s with missing thumbnail. Skipped\n" % file
-                  os.remove(os.path.join(root, file))
-                  continue
+                  # for WebM files, get extracted frame
+                  srcImage = data["img"].replace("#DEP#", os.path.join(tmppath, dir) + "/")
+                  srcImage = os.path.splitext(srcImage)[0] + ".webp"
+                  if os.path.isfile(srcImage):
+                    shutil.copyfile(srcImage, image)
+                  else:
+                    print("[ProcessTask] - Map %s with missing thumbnail. Skipped" % file)
+                    log += "- Map %s with missing thumbnail. Skipped\n" % file
+                    os.remove(os.path.join(root, file))
+                    continue
 
                 if not os.path.isfile(thumb):
                   shutil.copyfile(image, thumb) # avoid thumbnail being generated
