@@ -73,7 +73,7 @@ if len(tasks) > 0:
       storage = MoulinetteStorageAzure(client, task["container"])
       storage.deleteAssets(packName)
 
-      if task["packer"]:
+      if "packer" in task and task["packer"]:
         storage.uploadThumbs(folderPath)
         storage.uploadAsset(os.path.join(folderPath, "mtte.json"), packName)
       else:
