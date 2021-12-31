@@ -192,7 +192,7 @@ if len(tasks) > 0:
                 thumb = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
                 if not os.path.isfile(image):
                   # for WebM files, get extracted frame
-                  srcImage = data["img"].replace("#DEP#", os.path.join(tmppath, dir) + "/")
+                  srcImage = data["img"].replace("#DEP#", os.path.join(tmppath, dir) + "/") if "img" in data and data["img"] else ""
                   srcImage = os.path.splitext(srcImage)[0] + ".webp"
                   if os.path.isfile(srcImage):
                     shutil.copyfile(srcImage, image)
@@ -557,9 +557,9 @@ if len(tasks) > 0:
                         image = imagePath
                       elif os.path.isfile(imagePath):
                         srcExt = os.path.splitext(imagePath)[1]
-                        # special case for animated maps. Also copy the webm/mp4 file
+                        # special case for animated maps. Also copy the webm/mp4 file (WHY??? => disabling)
                         if srcExt in [".webm", ".mp4"]:
-                          shutil.copyfile(imagePath, os.path.join(root, os.path.splitext(file)[0] + srcExt))
+                          #shutil.copyfile(imagePath, os.path.join(root, os.path.splitext(file)[0] + srcExt))
                           shutil.copyfile(os.path.splitext(imagePath)[0] + ".webp", image)
                         else:
                           shutil.copyfile(imagePath, image)
