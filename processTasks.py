@@ -590,7 +590,9 @@ if len(tasks) > 0:
                       imgPath = os.path.splitext(imgPath)[0] + ".webm"
 
                     if not imgExternal:
-                      data["img"] = "#DEP#%s" % imgPath
+                      # replace img path (except for WebM (video))
+                      if not "img" in data or not data["img"].endswith("webm"):
+                        data["img"] = "#DEP#%s" % imgPath
 
                       # generate thumbnail
                       thumbPath = os.path.splitext(image)[0] + "_thumb.webp"
