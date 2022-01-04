@@ -26,6 +26,11 @@ STATIC_AVAIL_SC   = "available-scenes.json"
 BLOB_ACCOUNT_NAME = os.environ['AZURE_STORAGE_ACCOUNT']    # Azure Blob storage account name
 BLOB_ACCOUNT_KEY  = os.environ['AZURE_STORAGE_ACCESS_KEY'] # Azure Blob storage account key
 
+WATERMARK         = "../watermark.png"
+WATERMARK_MAP     = "../watermark-map.png"
+
+FILTER            = "" # leave blank to not filter
+
 
 blobService = BlobServiceClient(account_url="https://%s.blob.core.windows.net/" % BLOB_ACCOUNT_NAME, credential=BLOB_ACCOUNT_KEY)
 
@@ -64,8 +69,10 @@ for c in data:
 
   for p in c["packs"]:
     path = p["path"].split("mttecloudstorage.blob.core.windows.net/").pop()
-    if path.startswith("moulinette"):
+    if len(FILTER) > 0 and not path.startswith(FILTER):
       continue
+    #if path.startswith("moulinette"):
+    #  continue
     
     container = path.split("/")[0]
     packName = path.split("/")[1]
@@ -88,8 +95,8 @@ for c in data:
           if not os.path.isfile(thumbPath):
             blob = os.path.join(packName, thumb)
             if downloadFile(TMP_THUMB, container, blob):
-              os.system('convert "%s" -resize 400x400^ "%s"' % (TMP_THUMB, TMP_THUMB2))
-              os.system('composite ../watermark-map.png "%s" -gravity North "%s"' % (TMP_THUMB2, thumbPath))
+              os.system('convert -thumbnail 400x400 -background none -gravity center "%s" -extent 400x400 "%s"' % (TMP_THUMB, TMP_THUMB2))
+              os.system('composite "%s" "%s" -gravity Center "%s"' % (WATERMARK_MAP, TMP_THUMB2, thumbPath))
               print("[M] %s/%s" % (container, blob))
             else:
               print("[MISSING] %s/%s" % (container, blob))
@@ -102,8 +109,8 @@ for c in data:
           if not os.path.isfile(thumbPath):
             blob = os.path.join(packName, thumb)
             if downloadFile(TMP_THUMB, container, blob):
-              os.system('convert "%s" -resize 100x100^ "%s"' % (TMP_THUMB, TMP_THUMB2))
-              os.system('composite ../watermark.png "%s" -gravity North "%s"' % (TMP_THUMB2, thumbPath))
+              os.system('convert -thumbnail 100x100 -background none -gravity center "%s" -extent 100x100 "%s"' % (TMP_THUMB, TMP_THUMB2))
+              os.system('composite "%s" "%s" -gravity Center "%s"' % (WATERMARK, TMP_THUMB2, thumbPath))
               print("[A] %s/%s" % (container, blob))
             else:
               print("[MISSING] %s/%s" % (container, blob))
