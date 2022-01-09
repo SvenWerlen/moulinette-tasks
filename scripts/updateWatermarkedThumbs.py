@@ -132,4 +132,4 @@ with open(os.path.join(STATIC_FOLDER, STATIC_AVAIL), "w") as outfile:
 with open(os.path.join(STATIC_FOLDER, STATIC_AVAIL_SC), "w") as outfile:
   json.dump(pubsMaps, outfile)
 
-os.system("chmod -R 755 '%s'" % THUMB_FOLDER)
+os.system("chmod -R 775 '%s'" % THUMB_FOLDER)
