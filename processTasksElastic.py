@@ -99,12 +99,13 @@ def processUpdateIndices(container, packFile):
           category = "image"
 
         path = a["path"] if isinstance(a, dict) else a
-        pathClean = os.path.basename(path).replace(".webp", "")
+        pathClean = os.path.basename(path).replace(".webp", "").replace(".webm", "")
         doc = {
           'publisher': result[2],
           'packid': result[0],
           'pack': result[3],
           'category': category,
+          'animated': path.endswith(".webm"),
           'name': pathClean.replace("-", " ").replace("_", " ").title(),
           'base': result[4][47:], # remove https://mttecloudstorage.blob.core.windows.net/
           'path': pathClean,
