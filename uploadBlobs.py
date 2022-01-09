@@ -81,24 +81,23 @@ if len(tasks) > 0:
 
       # Upload source file (and json)
       # S3 Storage
-      if task["type"] == "extract":
-        session = boto3.session.Session()
-        clientS3 = session.client('s3',
-          region_name='nyc3', endpoint_url='https://nyc3.digitaloceanspaces.com',
-          aws_access_key_id=S3_STORAGE_ACCOUNT,
-          aws_secret_access_key=S3_STORAGE_ACCESS_KEY)
+      session = boto3.session.Session()
+      clientS3 = session.client('s3',
+        region_name='nyc3', endpoint_url='https://nyc3.digitaloceanspaces.com',
+        aws_access_key_id=S3_STORAGE_ACCOUNT,
+        aws_secret_access_key=S3_STORAGE_ACCESS_KEY)
 
-        storage = MoulinetteStorageS3(clientS3, "moulinette")
-        storage.initialize()
-        storage.uploadAsset(packFile, task["container"])
-        os.remove(packFile)
-        if os.path.isfile(packJSON):
-          storage.uploadAsset(packJSON, task["container"])
-          os.remove(packJSON)
+      storage = MoulinetteStorageS3(clientS3, "moulinette")
+      storage.initialize()
+      storage.uploadAsset(packFile, task["container"])
+      os.remove(packFile)
+      if os.path.isfile(packJSON):
+        storage.uploadAsset(packJSON, task["container"])
+        os.remove(packJSON)
 
-        if task["packer"]:
-          storage = MoulinetteStorageS3(clientS3, "moulinetteblobs")
-          storage.uploadButThumbs(folderPath)
+      if "packer" in task and task["packer"]:
+        storage = MoulinetteStorageS3(clientS3, "moulinetteblobs")
+        storage.uploadButThumbs(folderPath)
 
       # Delete all temp files
       shutil.rmtree(folderPath)
