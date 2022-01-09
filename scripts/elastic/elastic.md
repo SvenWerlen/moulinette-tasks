@@ -26,3 +26,4 @@
 ## Development
 
 * Python : https://www.elastic.co/guide/en/enterprise-search-clients/python/current/app-search-api.html
+* Javascript : https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/index.html
