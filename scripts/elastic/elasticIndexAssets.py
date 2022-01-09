@@ -68,7 +68,8 @@ resp = app_search.put_schema(
     engine_name=ENGINE_NAME,
     schema={
         "perm": "number",
-        "packid": "number"
+        "packid": "number",
+        "animated": "boolean"
     }
 )
 print("Schema updated after %.1f seconds" % (time.time() - secs))
