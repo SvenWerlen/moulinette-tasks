@@ -688,7 +688,8 @@ if len(tasks) > 0:
             if file.endswith(".webp") and not "_thumb" in file:
               baseDir = os.path.join(TMP, "mtte")
               basePath = os.path.join(root, file)[len(baseDir)+1:]
-              wmPath = os.path.join(PREVIEW_FOLDER, container, basePath)
+              basePath = os.path.splitext(basePath)[0]
+              wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp")
               if not os.path.isdir(os.path.dirname(wmPath)):
                 os.makedirs(os.path.dirname(wmPath))
               os.system('convert -thumbnail 100x100 -background none -gravity center "%s" -extent 100x100 /tmp/img.webp' % (os.path.join(root,file)))
@@ -702,7 +703,8 @@ if len(tasks) > 0:
               if os.path.isfile( os.path.join(root, imgPath) ):
                 baseDir = os.path.join(TMP, "mtte")
                 basePath = os.path.join(root, imgPath)[len(baseDir)+1:]
-                wmPath = os.path.join(PREVIEW_FOLDER, container, basePath)
+                basePath = os.path.splitext(basePath)[0]
+                wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp")
                 if not os.path.isdir(os.path.dirname(wmPath)):
                   os.makedirs(os.path.dirname(wmPath))
                 os.system('convert -thumbnail 400x400 -background none -gravity center "%s" -extent 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
