@@ -15,6 +15,11 @@ PREVIEW_FOLDER = os.getenv('PREVIEW_FOLDER')
 TASKS_FILE   = "moulinette-tasks.json"
 TASKS_STATUS = "moulinette-tasks-status.json"
 TMP = "/tmp/"
+DEBUG = False
+
+# Check if debug mode enabled
+if len(sys.argv) > 1:
+  DEBUG = sys.argv[1] == "true"
 
 # Check output folder
 if not OUTPUT_FOLDER or not os.path.isdir(OUTPUT_FOLDER):
@@ -199,7 +204,10 @@ if len(tasks) > 0:
                   else:
                     print("[ProcessTask] - Map %s with missing thumbnail. Skipped" % file)
                     log += "- Map %s with missing thumbnail. Skipped\n" % file
-                    os.remove(os.path.join(root, file))
+
+                    if not DEBUG:
+                      os.remove(os.path.join(root, file))
+
                     continue
 
                 if not os.path.isfile(thumb):
@@ -231,6 +239,10 @@ if len(tasks) > 0:
       print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
       log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
       
+      if DEBUG:
+        print("Stopping before CLEANUP")
+        exit(1)
+
       ###
       ### CLEANUP
       ###
@@ -632,6 +644,10 @@ if len(tasks) > 0:
 
         print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
         log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
+
+        if DEBUG:
+          print("Stopping before CLEANUP")
+          exit(1)
 
         ###
         ### CLEANUP
