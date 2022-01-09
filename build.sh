@@ -1,6 +1,8 @@
 #!/bin/bash
 source environment.sh
 
+DEBUG=$1
+
 JSON=/tmp/moulinette-tasks.json
 LOCK=/tmp/moulinette-tasks.lock
 
@@ -11,7 +13,9 @@ if [ -f "$LOCK" ]; then
 fi
 
 # add lock
-touch $LOCK
+if [ "$DEBUG" = false ]; then
+  touch $LOCK
+fi
 
 CONTINUE=true
 while $CONTINUE
@@ -19,7 +23,13 @@ do
     OK=true
 
     if [ "$OK" = true ]; then python3 ./retrieveTasks.py || OK=false; fi
-    if [ "$OK" = true ]; then python3 ./processTasks.py || OK=false; fi
+    if [ "$OK" = true ]; then python3 ./processTasks.py $DEBUG || OK=false; fi
+
+    if [ "$DEBUG" = true ]; then
+      echo "Debug completed!"
+      exit 1
+    fi
+
     if [ "$OK" = true ]; then python3 ./uploadBlobs.py || OK=false; fi
 
     python3 ./completeTasks.py $OK
