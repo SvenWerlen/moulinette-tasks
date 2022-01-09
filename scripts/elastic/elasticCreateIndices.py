@@ -49,7 +49,7 @@ for r in results:
     values[key] = {}
   values[key][catKey] = catVal
 
-with open(os.path.join(STATIC_FOLDER, 'available.json')) as f:
+with open(os.path.join(STATIC_FOLDER, 'availableNew.json')) as f:
   data = json.load(f)
 
   for pub, packs in data.items():
@@ -57,7 +57,7 @@ with open(os.path.join(STATIC_FOLDER, 'available.json')) as f:
 
       for a in pack['assets']:
         if MAX <= 0 or len(assets) < MAX:
-          match = re.search('^([^/]+/[^/]+)/(.+)_thumb.webp$', a)
+          match = re.search('^([^/]+/[^/]+)/(.+).web[pm]$', a)
           if not match:
             print("Something went wrong with", a)
             exit(1)
@@ -67,6 +67,7 @@ with open(os.path.join(STATIC_FOLDER, 'available.json')) as f:
             'packid': pack['id'],
             'pack': pack['name'],
             'category': 'image',
+            'animated': a.endswith(".webm"),
             'name': os.path.basename(a).replace("_thumb.webp", "").replace("-", " ").replace("_", " ").title(),
             'base': match.group(1),
             'path': match.group(2),
@@ -99,6 +100,7 @@ with open(os.path.join(STATIC_FOLDER, 'available-scenes.json')) as f:
             'packid': pack['id'],
             'pack': pack['name'],
             'category': 'scene',
+            'animated': a.endswith(".webm"),
             'name': os.path.basename(a).replace("_thumb.webp", "").replace("-", " ").replace("_", " ").title(),
             'base': match.group(1),
             'path': match.group(2),
