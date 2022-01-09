@@ -96,7 +96,7 @@ if len(tasks) > 0:
         os.remove(packJSON)
 
       if "packer" in task and task["packer"]:
-        storage = MoulinetteStorageS3(clientS3, "moulinetteblobs")
+        storage = MoulinetteStorageS3(clientS3, "moulinetteblobs", task["container"])
         storage.uploadButThumbs(folderPath)
 
       # Delete all temp files

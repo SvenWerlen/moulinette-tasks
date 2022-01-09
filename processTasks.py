@@ -2,12 +2,16 @@ import os
 import sys
 import re
 import requests
+import logging
 import json
 import zipfile
 import shutil
 from time import time
 from urllib.parse import unquote
 from processTasksScenePacker import *
+from processTasksElastic import *
+
+logger = logging.getLogger(__name__)
 
 # Get required variable environment
 OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER')
@@ -46,8 +50,6 @@ def getSize(path):
 
   return total_size
 
-
-
 # Only process 1 task at a time
 if len(tasks) > 0:
   task = tasks[0]
@@ -58,9 +60,23 @@ if len(tasks) > 0:
   log = ""
   
   ############################################################################################################################
+  ################################## TASK ELASTIC ############################################################################
+  ############################################################################################################################
+  if task["type"] == "updateIndex":
+    try:
+      stats = processUpdateIndices(task['container'], task['packFile'])
+      task["status"] = "done"
+      task["details"] = "%s docs deleted, %s docs indexed" % (stats['deleted'], stats['indexed'])
+
+    except Exception as e:
+      logger.error("Error index update")
+      logger.error(e)
+      task["status"] = "failed"
+
+  ############################################################################################################################
   ################################## TASK BYOA ###############################################################################
   ############################################################################################################################
-  if task["type"] == "byoa":
+  elif task["type"] == "byoa":
     blob = task["packFile"]
     container = task["container"]
     filepath = os.path.join(OUTPUT_FOLDER, container, blob)
@@ -675,8 +691,8 @@ if len(tasks) > 0:
               wmPath = os.path.join(PREVIEW_FOLDER, container, basePath)
               if not os.path.isdir(os.path.dirname(wmPath)):
                 os.makedirs(os.path.dirname(wmPath))
-              os.system('convert "%s" -resize 100x100^ /tmp/img.webp' % (os.path.join(root,file)))
-              os.system('composite watermark.png /tmp/img.webp -gravity North "%s"' % (wmPath))
+              os.system('convert -thumbnail 100x100 -background none -gravity center "%s" -extent 100x100 /tmp/img.webp' % (os.path.join(root,file)))
+              os.system('composite watermark.png /tmp/img.webp -gravity Center "%s"' % (wmPath))
 
         # maps
         for root, dirs, files in os.walk(tmppath):
@@ -689,8 +705,8 @@ if len(tasks) > 0:
                 wmPath = os.path.join(PREVIEW_FOLDER, container, basePath)
                 if not os.path.isdir(os.path.dirname(wmPath)):
                   os.makedirs(os.path.dirname(wmPath))
-                os.system('convert "%s" -resize 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
-                os.system('composite watermark-map.png /tmp/img.webp -gravity North "%s"' % (wmPath))
+                os.system('convert -thumbnail 400x400 -background none -gravity center "%s" -extent 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
+                os.system('composite watermark-map.png /tmp/img.webp -gravity Center "%s"' % (wmPath))
 
         # chg permissions
         os.system('chmod 775 -R %s' % (os.path.join(PREVIEW_FOLDER, container)))

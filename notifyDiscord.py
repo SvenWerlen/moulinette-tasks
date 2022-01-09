@@ -33,13 +33,16 @@ url = DISCORD_HOOK
 # Only process 1 task at a time
 if len(tasks) > 0:
   task = tasks[0]
+  details = task["details"] if "details" in task else ""
   
   if not OK:
-    content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d failed unexpectedly for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
+    status = "CRIT"
   elif task["status"] and task["status"] == "done":
-    content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d completed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
+    status = "SUCC"
   else:
-    content = {"username": "Tasks", "content": "Moulinette Cloud : Task #%d failed for pack '%s' on container '%s'" % (task["id"], task["packFile"], task["container"])}
+    status = "FAIL"
     
+  content = {"username": "Tasks", "content": "[**%s**] #%d   **%s** (type)   **%s** (pack)   **%s** (container).\n*%s*" % (status, task["id"], task["type"], task["packFile"], task["container"], details)}
+
   requests.post(url, data = content)
   
