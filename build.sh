@@ -13,7 +13,7 @@ if [ -f "$LOCK" ]; then
 fi
 
 # add lock
-if [ "$DEBUG" = false ]; then
+if [ ! "$DEBUG" = "true" ]; then
   touch $LOCK
 fi
 
@@ -25,7 +25,7 @@ do
     if [ "$OK" = true ]; then python3 ./retrieveTasks.py || OK=false; fi
     if [ "$OK" = true ]; then python3 ./processTasks.py $DEBUG || OK=false; fi
 
-    if [ "$DEBUG" = true ]; then
+    if [ "$DEBUG" = "true" ]; then
       echo "Debug completed!"
       exit 1
     fi
