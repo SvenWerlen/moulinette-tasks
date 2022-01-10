@@ -97,6 +97,9 @@ def processUpdateIndices(container, packFile):
         else:
           path = a
           category = "image"
+          # ignore sounds or other non-image format
+          if not a.endswith(".webp") and not a.endswith(".webm"):
+            continue
 
         path = a["path"] if isinstance(a, dict) else a
         pathClean = os.path.basename(path).replace(".webp", "").replace(".webm", "")
