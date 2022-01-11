@@ -102,7 +102,7 @@ def processUpdateIndices(container, packFile):
             continue
 
         path = a["path"] if isinstance(a, dict) else a
-        pathClean = os.path.basename(path).replace(".webp", "").replace(".webm", "")
+        pathClean = os.path.splitext(path)[0]
         doc = {
           'publisher': result[2],
           'packid': result[0],
