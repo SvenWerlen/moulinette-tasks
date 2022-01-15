@@ -17,6 +17,7 @@ from moulinette_utils.storage.s3 import MoulinetteStorageS3
 OUTPUT_FOLDER            = os.getenv('OUTPUT_FOLDER')             # Output folder (where to download the pack)
 AZURE_STORAGE_ACCOUNT    = os.getenv('AZURE_STORAGE_ACCOUNT')     # Azure storage account
 AZURE_STORAGE_ACCESS_KEY = os.getenv('AZURE_STORAGE_ACCESS_KEY')  # Azure storage access key
+PREVIEW_FOLDER           = os.getenv('PREVIEW_FOLDER')            # Folder with watermarked previews
 
 S3_STORAGE_ACCOUNT    = os.getenv('S3_STORAGE_ACCOUNT')     # S3 storage account
 S3_STORAGE_ACCESS_KEY = os.getenv('S3_STORAGE_ACCESS_KEY')  # S3 storage access key
@@ -98,6 +99,11 @@ if len(tasks) > 0:
       if "packer" in task and task["packer"]:
         storage = MoulinetteStorageS3(clientS3, "moulinetteblobs", task["container"])
         storage.uploadButThumbs(folderPath)
+
+      # upload watermarked thumbnails
+      if task["type"] == "extract":
+        storage = MoulinetteStorageS3(clientS3, "mttethumbs", task["container"])
+        storage.uploadAssets(os.path.join(PREVIEW_FOLDER, task["container"], packName), 0, "public-read")
 
       # Delete all temp files
       shutil.rmtree(folderPath)
