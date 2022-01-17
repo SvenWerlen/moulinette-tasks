@@ -74,9 +74,18 @@ def processUpdateIndices(container, packFile):
 
   # find matching pack
   docs = []
-  cursor.execute("SELECT id, assets, publisher, name, baseUrl FROM packs WHERE vanity = %s AND packFile = %s", (container, packFile) )
-  result = cursor.fetchone()
-  if result:
+  cursor.execute("SELECT id, assets, publisher, name, baseUrl, vanity FROM packs WHERE packFile = %s", (packFile) )
+  results = cursor.fetchall()
+  result = None
+
+  # check that container matches
+  for r in results:
+    if container == r[5].replace("_","").lower():
+      result = r
+
+  if not result:
+    logger.warning("No packFile %s on container %s" % (packFile, container))
+  else:
     # check permissions
     cursor.execute("SELECT tierId FROM packTiers WHERE packId = %s", (result[0]) )
     resultPerms = cursor.fetchall()
