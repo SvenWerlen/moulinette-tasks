@@ -6,6 +6,8 @@ import logging
 import json
 import zipfile
 import shutil
+import audioread
+from tinytag import TinyTag
 from time import time
 from urllib.parse import unquote
 from processTasksScenePacker import *
@@ -660,6 +662,35 @@ if len(tasks) > 0:
 
         print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
         log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
+
+        ###
+        ### Extract audio information
+        ###
+        audioInfo = {}
+        packBasePath = os.path.join(tmppath, dir)
+        for root, dirs, files in os.walk(tmppath):
+          for file in files:
+            if file.endswith(".ogg") or file.endswith(".mp3"):
+              audioFile = os.path.join(root, file)
+              relPath = os.path.join(root, file)[len(packBasePath)+1:]
+
+              tag = TinyTag.get(audioFile)
+              title = tag.title if tag.title else None
+              duration = round(tag.duration) if tag.duration else 0
+              if not duration:
+                with audioread.audio_open(audioFile) as f:
+                  duration = f.duration
+
+              audioInfo[relPath] = { "duration": duration }
+              if title and len(title) > 0:
+                audioInfo[relPath]['title'] = title
+
+              if file.lower().find("loop") > 0:
+                audioInfo[relPath]['loop'] = True
+
+        if len(audioInfo.keys()) > 0:
+          with open(os.path.join(packBasePath, "audioInfo.json"), "w") as out:
+            json.dump(audioInfo, out)
 
         if DEBUG:
           print("Stopping before CLEANUP")
