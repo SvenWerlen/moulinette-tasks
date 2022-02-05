@@ -674,9 +674,15 @@ if len(tasks) > 0:
               audioFile = os.path.join(root, file)
               relPath = os.path.join(root, file)[len(packBasePath)+1:]
 
-              tag = TinyTag.get(audioFile)
-              title = tag.title if tag.title else None
-              duration = round(tag.duration) if tag.duration else 0
+              title = None
+              duration = 0
+              try:
+                tag = TinyTag.get(audioFile)
+                title = tag.title if tag.title else None
+                duration = round(tag.duration) if tag.duration else 0
+              except Exception as e:
+                print("Couldn't extract tag", e)
+
               if not duration:
                 with audioread.audio_open(audioFile) as f:
                   duration = f.duration
