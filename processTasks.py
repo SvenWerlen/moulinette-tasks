@@ -360,6 +360,10 @@ if len(tasks) > 0:
         task["packer"] = True
         processScenePacker(tmppath, dir)
 
+        if DEBUG:
+          print("Stopping before CLEANUP")
+          exit(1)
+
       ###
       ### REGULAR PACK
       ###

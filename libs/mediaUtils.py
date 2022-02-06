@@ -16,7 +16,7 @@ DEFAULT_SIZE    = 400
 def convertImage( imagePath, destPath, quality = DEFAULT_QUALITY ):
 
   if not os.path.isfile(imagePath):
-    logging.warning("Cannot generate thumbnail. Image %s doesn't exist" % imagePath)
+    logging.warning("Cannot convert to WebP. Image %s doesn't exist" % imagePath)
     return False
 
   os.system("convert -quality %s %s %s" % (quality, imagePath, destPath))
@@ -32,4 +32,4 @@ def generateThumnail( imagePath, thumbPath, size = DEFAULT_SIZE ):
     return False
 
   sizes = "%sx%s" % (size, size)
-  os.system('convert "%s" -resize %s^ -gravity center -extent %s "%s"' % (imagePath, sizes, sizes, thumbPath))
+  os.system('convert "%s" -background none -resize %s^ -gravity center -extent %s "%s"' % (imagePath, sizes, sizes, thumbPath))
