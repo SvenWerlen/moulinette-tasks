@@ -117,7 +117,7 @@ def processUpdateIndices(container, packFile):
           'packid': result[0],
           'pack': result[3],
           'category': category,
-          'animated': path.endswith(".webm"),
+          'animated': path.endswith(".webm") or (isinstance(a, dict) and "img" in a and a["img"].endswith(".webm")),
           'name': pathClean.replace("-", " ").replace("_", " ").title(),
           'base': result[4][47:], # remove https://mttecloudstorage.blob.core.windows.net/
           'path': pathClean,
