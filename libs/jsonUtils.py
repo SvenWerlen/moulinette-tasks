@@ -23,3 +23,24 @@ def fileToJson(filepath):
 def jsonToFile(filepath, data):
   with open(filepath, "w") as f:
     f.write(json.dumps(data, separators=(',', ':')))
+
+
+##
+## Read a FoundryVTT DB file and retur a dict
+##
+def dbToJson(filepath):
+  data = {}
+  if os.path.isfile(filepath):
+    with open(filepath, 'r') as f:
+      lines = f.readlines()
+      for line in lines:
+        try:
+          jData = json.loads(line)
+          for sc in jData:
+            if "id" in sc:
+              data[sc["id"]] = sc
+            if "_id" in sc:
+              data[sc["_id"]] = sc
+        except:
+          pass
+  return data

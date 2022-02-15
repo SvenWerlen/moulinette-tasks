@@ -25,11 +25,12 @@ def convertImage( imagePath, destPath, quality = DEFAULT_QUALITY ):
 ## Generates thumbnail
 ## Returns false if something went wrong (ex: missing image)
 ##
-def generateThumnail( imagePath, thumbPath, size = DEFAULT_SIZE ):
+##
+def generateThumnail( imagePath, thumbPath, size = DEFAULT_SIZE, keepRatio = False ):
 
   if not os.path.isfile(imagePath):
     logging.warning("Cannot generate thumbnail. Image %s doesn't exist" % imagePath)
     return False
 
   sizes = "%sx%s" % (size, size)
-  os.system('convert "%s" -background none -resize %s^ -gravity center -extent %s "%s"' % (imagePath, sizes, sizes, thumbPath))
+  os.system('convert "%s" -background none -resize %s%s -gravity center -extent %s "%s"' % (imagePath, sizes, "^" if not keepRatio else "", sizes, thumbPath))

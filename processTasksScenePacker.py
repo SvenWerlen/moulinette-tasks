@@ -37,10 +37,19 @@
 import os
 import logging
 
-from libs.jsonUtils import fileToJson, jsonToFile
+from libs.jsonUtils import fileToJson, jsonToFile, dbToJson
 from libs.mediaUtils import convertImage, generateThumnail
 
 logger = logging.getLogger(__name__)
+
+# logging information
+logging.basicConfig(
+    format="[%(levelname)s] %(message)s (%(filename)s, %(funcName)s(), line %(lineno)d)",
+    level=logging.WARN,
+)
+logger = logging.getLogger("moulinette_utils")
+logger.setLevel(logging.INFO)
+
 
 ###
 ### Scene packer process
@@ -73,13 +82,30 @@ def processScenePacker(tmppath, dir):
     logger.warning("No scenes found (%s)!" % fileScenes)
   else:
     logger.info("Scenes found (%s)!" % fileScenes)
+    # load scenes
+    scenesDB = dbToJson(os.path.join(tmppath, dir, "data", "Scene.json"))
+
     # check that thumbnails exist and convert them into WEBP format
     for sc in scenes:
+
       srcThumb = os.path.join(tmppath, dir, "data", sc["thumb"])
       thumbFilename = os.path.basename(sc["id"])
 
+      # thumbnail path
       destPath = os.path.join(tmppath, dir, "mtte", os.path.splitext(thumbFilename)[0] + "_thumb.webp")
-      convertImage(srcThumb, destPath)
+
+      # use background as scene preview
+      if sc["id"] in scenesDB and "img" in scenesDB[sc["id"]]:
+        scene = scenesDB[sc["id"]]
+        backgroundPath = os.path.join(tmppath, dir, "data", "assets", scenesDB[sc["id"]]["img"])
+        if os.path.isfile(backgroundPath):
+          logger.info("Generating thumbnail for scene: %s (%s)" % (scene["name"], sc["id"]))
+          generateThumnail(backgroundPath, destPath, 400, True)
+
+      # fallback
+      if not os.path.isfile(destPath):
+        logger.warn("Converting fallback thumbnail for scene: %s" % (sc["id"]))
+        convertImage(srcThumb, destPath)
 
       # add scene to main info
       del(sc["thumb"])
@@ -97,7 +123,8 @@ def processScenePacker(tmppath, dir):
       imgFilename = os.path.basename(a["id"])
 
       destPath = os.path.join(tmppath, dir, "mtte", os.path.splitext(imgFilename)[0] + "_thumb.webp")
-      generateThumnail(srcImg, destPath)
+      logger.info("Generating thumbnail for actor: %s" % (imgFilename))
+      generateThumnail(srcImg, destPath, 200)
 
       # add scene to main info
       baseInfo["actors"].append(a)
