@@ -98,11 +98,11 @@ def processUpdateIndices(container, packFile):
       assets = json.loads(result[1])
       for a in assets:
         if isinstance(a, dict):
-          path = a["path"]
-          category = "scene"
           # ignore prefab & sounds & others
           if a["type"] != "scene":
             continue
+          path = a["path"]
+          category = "scene"
         else:
           path = a
           category = "image"

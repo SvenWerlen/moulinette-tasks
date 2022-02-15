@@ -67,6 +67,11 @@ if len(tasks) > 0:
   if task["type"] == "updateIndex":
     try:
       stats = processUpdateIndices(task['container'], task['packFile'])
+
+      if DEBUG:
+        print("Stopping before COMPLETION")
+        exit(1)
+
       task["status"] = "done"
       task["details"] = "%s docs deleted, %s docs indexed" % (stats['deleted'], stats['indexed'])
 
