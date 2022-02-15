@@ -25,7 +25,6 @@ def convertImage( imagePath, destPath, quality = DEFAULT_QUALITY ):
 ## Generates thumbnail
 ## Returns false if something went wrong (ex: missing image)
 ##
-##
 def generateThumnail( imagePath, thumbPath, size = DEFAULT_SIZE, keepRatio = False ):
 
   if not os.path.isfile(imagePath):
@@ -34,3 +33,16 @@ def generateThumnail( imagePath, thumbPath, size = DEFAULT_SIZE, keepRatio = Fal
 
   sizes = "%sx%s" % (size, size)
   os.system('convert "%s" -background none -resize %s%s -gravity center -extent %s "%s"' % (imagePath, sizes, "^" if not keepRatio else "", sizes, thumbPath))
+
+
+##
+## Generates watermarked version
+##
+def generateWatermark( imagePath, wmPath, watermark, size = DEFAULT_SIZE ):
+
+  if not os.path.isfile(imagePath):
+    logging.warning("Cannot generate watermarked thumbnail. Image %s doesn't exist" % imagePath)
+    return False
+
+  os.system('convert -thumbnail %sx%s -background none -gravity center "%s" -extent %sx%s /tmp/img.webp' % (size, size, imagePath, size, size))
+  os.system('composite %s /tmp/img.webp -gravity Center "%s"' % (watermark, wmPath))

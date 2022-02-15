@@ -38,7 +38,7 @@ import os
 import logging
 
 from libs.jsonUtils import fileToJson, jsonToFile, dbToJson
-from libs.mediaUtils import convertImage, generateThumnail
+from libs.mediaUtils import convertImage, generateThumnail, generateWatermark
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +50,14 @@ logging.basicConfig(
 logger = logging.getLogger("moulinette_utils")
 logger.setLevel(logging.INFO)
 
+PREVIEW_FOLDER = os.getenv('PREVIEW_FOLDER')
 
 ###
 ### Scene packer process
 ### - prepare JSON (scene-packer.json)
 ### - convert scenes thumbnails
 ###
-def processScenePacker(tmppath, dir):
+def processScenePacker(tmppath, dir, container):
 
   fileScenes = os.path.join(tmppath, dir, "data", "scenes", "info.json")
   fileActors = os.path.join(tmppath, dir, "data", "actors", "info.json")
@@ -107,6 +108,12 @@ def processScenePacker(tmppath, dir):
         logger.warn("Converting fallback thumbnail for scene: %s" % (sc["id"]))
         convertImage(srcThumb, destPath)
 
+      # generate watermarked versions
+      wmPath = os.path.join(PREVIEW_FOLDER, container, dir, os.path.basename(destPath))
+      if not os.path.isdir(os.path.dirname(wmPath)):
+        os.makedirs(os.path.dirname(wmPath))
+      generateWatermark(destPath, wmPath, "watermark-map.png", 400)
+
       # add scene to main info
       del(sc["thumb"])
       baseInfo["scenes"].append(sc)
@@ -125,6 +132,12 @@ def processScenePacker(tmppath, dir):
       destPath = os.path.join(tmppath, dir, "mtte", os.path.splitext(imgFilename)[0] + "_thumb.webp")
       logger.info("Generating thumbnail for actor: %s" % (imgFilename))
       generateThumnail(srcImg, destPath, 200)
+
+      # generate watermarked versions
+      wmPath = os.path.join(PREVIEW_FOLDER, container, dir, os.path.basename(destPath))
+      if not os.path.isdir(os.path.dirname(wmPath)):
+        os.makedirs(os.path.dirname(wmPath))
+      generateWatermark(destPath, wmPath, "watermark.png", 100)
 
       # add scene to main info
       baseInfo["actors"].append(a)
