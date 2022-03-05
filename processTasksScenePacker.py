@@ -89,6 +89,10 @@ def processScenePacker(tmppath, dir, container):
     # check that thumbnails exist and convert them into WEBP format
     for sc in scenes:
 
+      if not sc["thumb"]:
+        return logger.warning("Skipping scene because thumb is None %s" % sc)
+        continue;
+
       srcThumb = os.path.join(tmppath, dir, "data", sc["thumb"])
       thumbFilename = os.path.basename(sc["id"])
 
