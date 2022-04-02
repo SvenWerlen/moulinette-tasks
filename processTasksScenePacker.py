@@ -146,6 +146,20 @@ def processScenePacker(tmppath, dir, container):
       # add scene to main info
       baseInfo["actors"].append(a)
 
+  # STEP 3 : if adventure => retrieve cover
+  if "category" in baseInfo and baseInfo["category"] in ["one-shot", "short-adventure", "long-adventure"]:
+    # cover must be in /data/cover/ and have filename <cover>.[ext]
+    covers = os.listdir(os.path.join(tmppath, dir, "data", "cover"))
+    if len(covers) != 1:
+      raise Exception("Missing cover!")
+
+    # generate watermarked versions
+    coverPath = os.path.join(tmppath, dir, "data", "cover", covers[0])
+    thumbPath = os.path.join(PREVIEW_FOLDER, container, dir, "cover_thumb.webp")
+    if not os.path.isdir(os.path.dirname(thumbPath)):
+      os.makedirs(os.path.dirname(thumbPath))
+    generateThumnail(coverPath, thumbPath, 400, True)
+
   # generate a new JSON for moulinette purpose
   jsonToFile(fileMtte, baseInfo)
 

@@ -4,6 +4,9 @@ import logging
 import pymysql
 from elastic_enterprise_search import AppSearch
 
+from azure.storage.blob import BlobServiceClient
+from moulinette_utils.storage.azure import MoulinetteStorageAzure
+
 logger = logging.getLogger(__name__)
 
 SERVER         = os.environ["MOULINETTE_API"]
@@ -11,6 +14,10 @@ SESSION_ID     = "moulinette-readonly-all"
 ELASTIC_ENGINE = "moulinette"
 PAGE_SIZE      = 1000
 ASSETS_MAX     = 100
+
+AZURE_STORAGE_ACCOUNT    = os.getenv('AZURE_STORAGE_ACCOUNT')     # Azure storage account
+AZURE_STORAGE_ACCESS_KEY = os.getenv('AZURE_STORAGE_ACCESS_KEY')  # Azure storage access key
+
 
 # access DB
 db = pymysql.connect(host="localhost", user=os.environ['DB_USER'], password=os.environ['DB_PASS'], database=os.environ['DB_DB'])
@@ -96,6 +103,61 @@ def processUpdateIndices(container, packFile):
     if len(perms) > 0:
       # index all documents
       assets = json.loads(result[1])
+
+      # ScenePacker detected! => read metadata
+      if len(assets) > 0 and "tokens" in assets[0]:
+        # S3 Storage
+        client = BlobServiceClient(account_url="https://%s.blob.core.windows.net/" % AZURE_STORAGE_ACCOUNT, credential=AZURE_STORAGE_ACCESS_KEY)
+        storage = MoulinetteStorageAzure(client, container)
+
+        # read JSON file
+        file = storage.getAsset(os.path.join(result[4].split("/")[-1], "mtte.json"))
+        if file:
+          metaData = json.loads(file)
+          advDoc = {
+            'publisher': result[2],
+            'packid': result[0],
+            'pack': result[3],
+            'category': "adventure",
+            'name': result[3].title(),
+            'base': result[4][47:], # remove https://mttecloudstorage.blob.core.windows.net/
+            'path': "cover",
+            'perm': perms
+          }
+          if "category" in metaData and metaData["category"] in ["one-shot", "short-adventure", "long-adventure"]:
+            advDoc['catadv_category'] = metaData["category"]
+          if "play_hours" in metaData:
+            advDoc['catadv_playhours'] = int(metaData["play_hours"])
+          if "players" in metaData:
+            playersData = metaData["players"]
+            players = []
+            if "min" in playersData and "max" in playersData and int(playersData["min"]) <= int(playersData["max"]):
+              min = int(playersData["min"])
+              max = int(playersData["max"])
+              idx = min
+              while idx <= max:
+                players.append(idx)
+                idx += 1
+              advDoc['catadv_players'] = players
+          if "player_levels" in metaData:
+            levelsData = metaData["player_levels"]
+            levels = []
+            for el in levelsData:
+              if "min" in el and "max" in el and int(el["min"]) <= int(el["max"]):
+                min = int(el["min"])
+                max = int(el["max"])
+                idx = min
+                while idx <= max:
+                  if not idx in levels:
+                    levels.append(idx)
+                  idx += 1
+            if levels and len(levels) > 0:
+              levels = [10, 11, 8, 9, 13]
+              advDoc['catadv_levels'] = sorted(levels)
+
+          print(advDoc)
+          docs.append(advDoc)
+
       for a in assets:
         if isinstance(a, dict):
           # ignore prefab & sounds & others
@@ -131,7 +193,7 @@ def processUpdateIndices(container, packFile):
           doc['cat%s' % c[0].lower()] = c[1]
 
         # add index to be processed
-        docs.append(doc)
+        #docs.append(doc)
 
   sublist = [docs[i:i+ASSETS_MAX] for i in range(0, len(docs), ASSETS_MAX)]
   for d in sublist:
