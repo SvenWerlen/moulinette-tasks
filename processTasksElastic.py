@@ -155,7 +155,6 @@ def processUpdateIndices(container, packFile):
               levels = [10, 11, 8, 9, 13]
               advDoc['catadv_levels'] = sorted(levels)
 
-          print(advDoc)
           docs.append(advDoc)
 
       for a in assets:
@@ -193,7 +192,7 @@ def processUpdateIndices(container, packFile):
           doc['cat%s' % c[0].lower()] = c[1]
 
         # add index to be processed
-        #docs.append(doc)
+        docs.append(doc)
 
   sublist = [docs[i:i+ASSETS_MAX] for i in range(0, len(docs), ASSETS_MAX)]
   for d in sublist:
