@@ -125,7 +125,9 @@ def processUpdateIndices(container, packFile):
             'perm': perms
           }
           if "category" in metaData and metaData["category"] in ["one-shot", "short-adventure", "long-adventure", "short-campaign", "long-campaign"]:
-            advDoc['catadv_category'] = metaData["category"]
+            advDoc['category'] = "adventure"
+            advDoc['catadv_category'] = metaData["category"].replace("campaign", "adventure") # short-campaign = short-adventure, long-campaign = long-adventure
+
           if "play_hours" in metaData:
             advDoc['catadv_playhours'] = int(metaData["play_hours"])
           if "players" in metaData:
