@@ -118,7 +118,7 @@ def processUpdateIndices(container, packFile):
             'publisher': result[2],
             'packid': result[0],
             'pack': result[3],
-            'category': "adventure",
+            'category': "scene",
             'name': result[3].title(),
             'base': result[4][47:], # remove https://mttecloudstorage.blob.core.windows.net/
             'path': "cover",
