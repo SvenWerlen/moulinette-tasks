@@ -124,7 +124,7 @@ def processUpdateIndices(container, packFile):
             'path': "cover",
             'perm': perms
           }
-          if "category" in metaData and metaData["category"] in ["one-shot", "short-adventure", "long-adventure"]:
+          if "category" in metaData and metaData["category"] in ["one-shot", "short-adventure", "long-adventure", "short-campaign", "long-campaign"]:
             advDoc['catadv_category'] = metaData["category"]
           if "play_hours" in metaData:
             advDoc['catadv_playhours'] = int(metaData["play_hours"])

@@ -147,7 +147,7 @@ def processScenePacker(tmppath, dir, container):
       baseInfo["actors"].append(a)
 
   # STEP 3 : if adventure => retrieve cover
-  if "category" in baseInfo and baseInfo["category"] in ["one-shot", "short-adventure", "long-adventure"]:
+  if "category" in baseInfo and baseInfo["category"] in ["one-shot", "short-adventure", "long-adventure", "short-campaign", "long-campaign"]:
     # cover must be in /data/cover/ and have filename <cover>.[ext]
     covers = os.listdir(os.path.join(tmppath, dir, "data", "cover"))
     if len(covers) != 1:
