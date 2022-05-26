@@ -32,8 +32,13 @@ def generateThumnail( imagePath, thumbPath, size = DEFAULT_SIZE, keepRatio = Fal
     return False
 
   sizes = "%sx%s" % (size, size)
-  os.system('convert "%s" -background none -resize %s%s -gravity center -extent %s "%s"' % (imagePath, sizes, "^" if not keepRatio else "", sizes, thumbPath))
 
+  # image is video
+  if imagePath.endswith(".webm") or imagePath.endswith(".mp4"):
+    os.system('./thumbnailFromVideo.sh "%s" "%s"' % (imagePath, "/tmp/thumbnail"))
+    generateThumnail( "/tmp/thumbnail.webp", thumbPath, size, keepRatio )
+  else:
+    os.system('convert "%s" -background none -resize %s%s -gravity center -extent %s "%s"' % (imagePath, sizes, "^" if not keepRatio else "", sizes, thumbPath))
 
 ##
 ## Generates watermarked version
