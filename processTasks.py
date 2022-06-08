@@ -442,13 +442,17 @@ if len(tasks) > 0:
 
         ###
         ### PRE PROCESSING #3 (special for Baileywiki)
-        ### - assuming that all images in json/ folder are thumbnails, rename them accordingly
+        ### - assuming that all images in json/ folder are thumbnails, generate thumbnail and keep origin accordingly
         ###
         for root, dirs, files in os.walk(os.path.join(TMP, "mtte", dir, "json")):
           for file in files:
-            if file.endswith(".webp"):
+            if file.endswith(".webp") and not "_thumb" in file:
               source = os.path.join(root, file)
+              # generate thumbnail
               target = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+              os.system('convert "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (source, target))
+              # generate original source
+              target = os.path.join(root, os.path.splitext(file)[0] + "_thumb_orig.webp")
               os.rename(source, target)
 
         # load configuration if exists
@@ -607,9 +611,9 @@ if len(tasks) > 0:
                         log += "[ProcessTask] - No match and image %s doesn't exist" % imagePath
 
                     else:
-                      print("[ProcessTask] - Map %s with missing img path. Skipped" % file)
-                      log += "- Map %s with missing img path. Skipped\n" % file
-                      os.remove(os.path.join(root, file))
+                      print("[ProcessTask] - Map %s with missing img path. Using empty image" % file)
+                      log += "- Map %s with missing img path. Using empty image\n" % file
+                      shutil.copyfile("noimage.webp", image)
                       continue
 
                   # if image path depends on another pack => don't generate thumbnail (assume it was done)
