@@ -564,7 +564,8 @@ if len(tasks) > 0:
             ###
             if file.endswith(".json"):
               with open(os.path.join(root, file), "r") as f:
-                content = f.read().replace('\n', '')
+                # replace all %20 or similar (URL decode). Hopefully, this will not break anything else :-)
+                content = unquote(f.read().replace('\n', ''))
 
                 # if depPath defined => replace all paths with #DEP#
                 if cfg and "depPath" in cfg:
