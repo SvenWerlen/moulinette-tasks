@@ -571,7 +571,6 @@ if len(tasks) > 0:
 
                 # if depPath defined => replace all paths with #DEP#
                 if cfg and "depPath" in cfg:
-                  print(cfg["depPath"])
                   content = content.replace("\"%s/" % cfg["depPath"], "\"#DEP#")
                   if "external" in cfg:
                     for idx, dep in enumerate(cfg["external"]):
@@ -595,13 +594,9 @@ if len(tasks) > 0:
                   image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
                   if not os.path.isfile(image):
                     if "img" in data and data["img"] and len(data["img"]) > 0:
-                      print(root)
                       idx = root.find('/', len(tmppath)+2)
                       rootFolder = root[0:idx] if idx >= 0 else root
                       imagePath = unquote(os.path.join(rootFolder, data["img"].replace("#DEP#", "")))
-                      print(imagePath)
-                      print(data["img"])
-                      exit(1)
                       # copy background image file near json file (required to match with thumbnail)
                       if re.match("#DEP\d#", data["img"]):
                         print("[ProcessTask] Thumbnail is not possible from external pack: %s" % data["img"])
