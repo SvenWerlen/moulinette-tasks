@@ -355,6 +355,7 @@ if len(tasks) > 0:
       ### - remove all files larger than 20 MB
       ###
       os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+      os.system("find '%s' -type f -name '.*' -exec rm -f {} \;" % tmppath)
       os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -rf {} \;" % tmppath)
       
       ###
