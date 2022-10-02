@@ -224,10 +224,6 @@ if len(tasks) > 0:
                 backgroundImage = data["background"]["src"]
 
               if "navigation" in data:
-                # special case (dummy scene)
-                if "name" in data and data["name"] == "#[CF_tempEntity]":
-                  continue;
-
                 # look for default location for scene image (same folder, same name)
                 image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
                 thumb = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
@@ -442,6 +438,12 @@ if len(tasks) > 0:
                   if "name" in data:
                     filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
                     folder = None
+
+                    # special case (dummy scene)
+                    if data["name"] == "#[CF_tempEntity]":
+                      print("Skipping scene with name %s" % data["name"])
+                      continue;
+
                     # actors => prefab
                     if "type" in data and data["type"] == "npc":
                       folder = os.path.join(tmppath, dir, "json", "prefabs")
@@ -609,10 +611,6 @@ if len(tasks) > 0:
                   log += "- Prefab %s ...\n" % file
 
                 elif "navigation" in data:
-                  # special case (dummy scene)
-                  if "name" in data and data["name"] == "#[CF_tempEntity]":
-                    continue;
-
                   # look for default location for scene image (same folder, same name) OR look for "img" in JSON
                   image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
                   if not os.path.isfile(image):
