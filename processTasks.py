@@ -215,13 +215,21 @@ if len(tasks) > 0:
               content = re.sub(r'"(#DEP[^"]*).(?:png|jpg|gif|jpeg)"', '"\g<1>.webp"', content)
 
               data = json.loads(content)
+              backgroundImage = None
+              # UP TO V9
+              if "img" in data:
+                backgroundImage = data["img"]
+              # FROM V10
+              elif "background" in data and "src" in data["background"]:
+                backgroundImage = data["background"]["src"]
+
               if "navigation" in data:
                 # look for default location for scene image (same folder, same name)
                 image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
                 thumb = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
                 if not os.path.isfile(image):
                   # for WebM files, get extracted frame
-                  srcImage = data["img"].replace("#DEP#", os.path.join(tmppath, dir) + "/") if "img" in data and data["img"] else ""
+                  srcImage = backgroundImage.replace("#DEP#", os.path.join(tmppath, dir) + "/") if backgroundImage else ""
                   srcImage = os.path.splitext(srcImage)[0] + ".webp"
                   if os.path.isfile(srcImage):
                     shutil.copyfile(srcImage, image)
@@ -583,6 +591,13 @@ if len(tasks) > 0:
                     fw.write(content)
 
                 data = json.loads(content)
+                backgroundImage = None
+                # UP TO V9
+                if "img" in data:
+                  backgroundImage = data["img"]
+                # FROM V10
+                elif "background" in data and "src" in data["background"]:
+                  backgroundImage = data["background"]["src"]
 
                 if "type" in data and data["type"] == "npc":
                   # nothing more to do
@@ -593,13 +608,13 @@ if len(tasks) > 0:
                   # look for default location for scene image (same folder, same name) OR look for "img" in JSON
                   image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
                   if not os.path.isfile(image):
-                    if "img" in data and data["img"] and len(data["img"]) > 0:
+                    if backgroundImage and len(backgroundImage) > 0:
                       idx = root.find('/', len(tmppath)+2)
                       rootFolder = root[0:idx] if idx >= 0 else root
-                      imagePath = unquote(os.path.join(rootFolder, data["img"].replace("#DEP#", "")))
+                      imagePath = unquote(os.path.join(rootFolder, backgroundImage.replace("#DEP#", "")))
                       # copy background image file near json file (required to match with thumbnail)
-                      if re.match("#DEP\d#", data["img"]):
-                        print("[ProcessTask] Thumbnail is not possible from external pack: %s" % data["img"])
+                      if re.match("#DEP\d#", backgroundImage):
+                        print("[ProcessTask] Thumbnail is not possible from external pack: %s" % backgroundImage)
                         image = imagePath
                       elif os.path.isfile(imagePath):
                         srcExt = os.path.splitext(imagePath)[1]
@@ -620,7 +635,7 @@ if len(tasks) > 0:
                       continue
 
                   # if image path depends on another pack => don't generate thumbnail (assume it was done)
-                  imgExternal = re.match("#DEP\d#", data["img"]) if "img" in data and data["img"] else None
+                  imgExternal = re.match("#DEP\d#", backgroundImage) if backgroundImage else None
                   if imgExternal or os.path.isfile(image):
                     print("[ProcessTask] - Scene %s ... " % file)
                     log += "- Scene %s ...\n" % file
@@ -637,8 +652,8 @@ if len(tasks) > 0:
 
                     if not imgExternal:
                       # replace img path (except for WebM (video))
-                      if not "img" in data or not data["img"].endswith("webm"):
-                        data["img"] = "#DEP#%s" % imgPath
+                      if backgroundImage or not backgroundImage.endswith("webm"):
+                        backgroundImage = "#DEP#%s" % imgPath
 
                       # generate thumbnail
                       thumbPath = os.path.splitext(image)[0] + "_thumb.webp"
