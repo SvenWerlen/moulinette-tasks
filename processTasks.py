@@ -396,12 +396,15 @@ if len(tasks) > 0:
         if os.path.isfile(fvttModulePath) and not os.path.isfile(configPath):
           with open(fvttModulePath, 'r') as f:
             data = json.load(f)
-            if "name" in data:
-              print("[ProcessTask] Foundry VTT module.json file found with name '%s'" % data["name"])
-              log += "Foundry VTT module.json file found with name '%s'\n" % data["name"]
+            if "name" in data or "id" in data:
+              # V10 (id), V9 (name)
+              moduleID = data["id"] if "id" in data else data["name"]
+
+              print("[ProcessTask] Foundry VTT module.json file found with name '%s'" % moduleID)
+              log += "Foundry VTT module.json file found with name '%s'\n" % moduleID
 
               config = {
-                "depPath" : "modules/%s" % data["name"]
+                "depPath" : "modules/%s" % moduleID
               }
               with open(configPath, 'w') as out:
                 json.dump(config, out)
@@ -415,12 +418,15 @@ if len(tasks) > 0:
         if os.path.isfile(fvttWorldPath) and not os.path.isfile(configPath):
           with open(fvttWorldPath, 'r') as f:
             data = json.load(f)
-            if "name" in data:
-              print("[ProcessTask] Foundry VTT world.json file found with name '%s'" % data["name"])
-              log += "Foundry VTT world.json file found with name '%s'\n" % data["name"]
+            if "name" in data or "id" in data:
+              # V10 (id), V9 (name)
+              moduleID = data["id"] if "id" in data else data["name"]
+
+              print("[ProcessTask] Foundry VTT world.json file found with name '%s'" % moduleID)
+              log += "Foundry VTT world.json file found with name '%s'\n" % moduleID
 
               config = {
-                "depPath" : "worlds/%s" % data["name"]
+                "depPath" : "worlds/%s" % moduleID
               }
               with open(configPath, 'w') as out:
                 json.dump(config, out)
@@ -659,7 +665,12 @@ if len(tasks) > 0:
                     if not imgExternal:
                       # replace img path (except for WebM (video))
                       if not backgroundImage or not backgroundImage.endswith("webm"):
-                        data["img"] = "#DEP#%s" % imgPath
+                        # V10
+                        if "background" in data and "src" in data["background"]:
+                          data["background"]["src"] = "#DEP#%s" % imgPath
+                        # V9
+                        else:
+                          data["img"] = "#DEP#%s" % imgPath
 
                       # generate thumbnail
                       thumbPath = os.path.splitext(image)[0] + "_thumb.webp"
