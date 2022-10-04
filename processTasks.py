@@ -658,7 +658,7 @@ if len(tasks) > 0:
 
                     if not imgExternal:
                       # replace img path (except for WebM (video))
-                      if backgroundImage or not backgroundImage.endswith("webm"):
+                      if backgroundImage and not backgroundImage.endswith("webm"):
                         backgroundImage = "#DEP#%s" % imgPath
 
                       # generate thumbnail
