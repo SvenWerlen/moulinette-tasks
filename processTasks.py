@@ -513,6 +513,21 @@ if len(tasks) > 0:
         print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
         log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
 
+        ###
+        ### AUDIO CONVERSION
+        ### - converts all .aac audio to .ogg format
+        ###
+        secs = time()
+        for root, dirs, files in os.walk(tmppath):
+          for file in files:
+            if(file.lower().endswith(".aac")):
+              aacFile = os.path.join(root, file)
+              oggFile = os.path.splitext(aacFile)[0] + ".ogg"
+              print("Processing " + aacFile)
+              os.system("ffmpeg -loglevel quiet -stats -n -i \"%s\" \"%s\"" % (aacFile, oggFile))
+
+        print("[ProcessTask] Conversion from aac to ogg in %.1f seconds" % (time() - secs))
+        log += "Conversion from aac to ogg in %.1f seconds\n" % (time() - secs)
 
         ###
         ### GENERATE MAPS FROM IMAGE or VIDEO
