@@ -331,532 +331,537 @@ if len(tasks) > 0:
     blob = task["packFile"]
     container = task["container"]
     filepath = os.path.join(OUTPUT_FOLDER, container, blob)
-    if os.path.isfile(filepath):
-      dir = os.path.splitext(os.path.basename(filepath))[0]
-      dirpath = os.path.join(OUTPUT_FOLDER, container, dir)
-      tmppath = os.path.join(TMP, "mtte")    
-      print("[ProcessTask] Processing '%s'" % blob)
-          
-      # prepare
-      if os.path.isdir(tmppath):
-        os.system("rm -rf '%s'" % tmppath)
-      os.mkdir(tmppath)
-      
-      # extract archive
-      secs = time()
-      if filepath.endswith(".zip"):
-        os.system("./sunzip.sh '%s' '%s'" % (filepath, tmppath))
-      elif filepath.endswith(".dungeondraft_pack"):
-        os.system("$GOPATH/bin/dungeondraft-unpack '%s' '%s'" % (filepath, tmppath))
-      else:
-        sys.exit("Invalid file %s" % filepath)
+    try:
+      if os.path.isfile(filepath):
+        dir = os.path.splitext(os.path.basename(filepath))[0]
+        dirpath = os.path.join(OUTPUT_FOLDER, container, dir)
+        tmppath = os.path.join(TMP, "mtte")
+        print("[ProcessTask] Processing '%s'" % blob)
 
-      print("[ProcessTask] Unzipped in %.1f seconds" % (time() - secs))
-      log += "Unzipped in %.1f seconds\n" % (time() - secs)
-      
-      # change permissions (just in case)
-      os.system("chmod -R 755 '%s'" % tmppath)
-      
-      ###
-      ### PRE CLEANUP
-      ### - remove all __MACOSX folders
-      ### - remove all files larger than 20 MB
-      ###
-      os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
-      os.system("find '%s' -type f -name '.*' -exec rm -f {} \;" % tmppath)
-      os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -rf {} \;" % tmppath)
-      
-      ###
-      ### SCENE PACKER
-      ###
-      task["packer"] = False
-      if os.path.isfile( os.path.join(tmppath, dir, "scene-packer.info") ):
-        print("[ProcessTask] Scene Packer identified.")
-        task["packer"] = True
-        processScenePacker(tmppath, dir, container)
+        # prepare
+        if os.path.isdir(tmppath):
+          os.system("rm -rf '%s'" % tmppath)
+        os.mkdir(tmppath)
 
-        if DEBUG:
-          print("Stopping before CLEANUP")
-          exit(1)
-
-      ###
-      ### REGULAR PACK
-      ###
-      else:
-
-        ###
-        ### PRE PROCESSING #1.a
-        ### - extract information from any existing module
-        ###
-        fvttModulePath = os.path.join(tmppath, dir, "module.json")
-        configPath = os.path.join(tmppath, dir, "json", "config.json")
-        if not os.path.isfile(configPath):
-          configPath = os.path.join(tmppath, dir, "config.json")
-
-        if os.path.isfile(fvttModulePath) and not os.path.isfile(configPath):
-          with open(fvttModulePath, 'r') as f:
-            data = json.load(f)
-            if "name" in data or "id" in data:
-              # V10 (id), V9 (name)
-              moduleID = data["id"] if "id" in data else data["name"]
-
-              print("[ProcessTask] Foundry VTT module.json file found with name '%s'" % moduleID)
-              log += "Foundry VTT module.json file found with name '%s'\n" % moduleID
-
-              config = {
-                "depPath" : "modules/%s" % moduleID
-              }
-              with open(configPath, 'w') as out:
-                json.dump(config, out)
-
-        ###
-        ### PRE PROCESSING #1.b
-        ### - extract information from any existing module
-        ###
-        fvttWorldPath = os.path.join(tmppath, dir, "world.json")
-
-        if os.path.isfile(fvttWorldPath) and not os.path.isfile(configPath):
-          with open(fvttWorldPath, 'r') as f:
-            data = json.load(f)
-            if "name" in data or "id" in data:
-              # V10 (id), V9 (name)
-              moduleID = data["id"] if "id" in data else data["name"]
-
-              print("[ProcessTask] Foundry VTT world.json file found with name '%s'" % moduleID)
-              log += "Foundry VTT world.json file found with name '%s'\n" % moduleID
-
-              config = {
-                "depPath" : "worlds/%s" % moduleID
-              }
-              with open(configPath, 'w') as out:
-                json.dump(config, out)
-
-        ###
-        ### PRE PROCESSING #2
-        ### - extracts all entries from compendiums (if type supported)
-        ###
-        for root, dirs, files in os.walk(tmppath):
-          for file in files:
-            if file.endswith(".db"):
-              with open(os.path.join(root,file), 'r') as f:
-                for line in f:
-                  data = json.loads(line)
-                  if "name" in data:
-                    filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
-                    folder = None
-
-                    # special case (dummy scene)
-                    if data["name"] == "#[CF_tempEntity]":
-                      print("Skipping scene with name %s" % data["name"])
-                      continue;
-
-                    # actors => prefab
-                    if "type" in data and data["type"] == "npc":
-                      folder = os.path.join(tmppath, dir, "json", "prefabs")
-                    # navigation => scene
-                    elif "navigation" in data:
-                      folder = os.path.join(tmppath, dir, "json", "maps")
-
-                    if folder:
-                      os.system("mkdir -p '%s'" % folder)
-                      with open(os.path.join(folder, filename + ".json"), 'w') as out:
-                        json.dump(data, out)
-
-        ###
-        ### PRE PROCESSING #3 (special for Baileywiki)
-        ### - assuming that all images in json/ folder are thumbnails, generate thumbnail and keep origin accordingly
-        ###
-        for root, dirs, files in os.walk(os.path.join(TMP, "mtte", dir, "json")):
-          for file in files:
-            if file.endswith(".webp") and not "_thumb" in file:
-              source = os.path.join(root, file)
-              # generate thumbnail
-              target = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
-              os.system('convert "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (source, target))
-              # generate original source
-              target = os.path.join(root, os.path.splitext(file)[0] + "_thumb_orig.webp")
-              os.rename(source, target)
-
-        # load configuration if exists
-        cfg = None
-        if os.path.isfile(configPath):
-          with open(configPath, "r") as f:
-            cfg = json.load(f)
+        # extract archive
+        secs = time()
+        if filepath.endswith(".zip"):
+          os.system("./sunzip.sh '%s' '%s'" % (filepath, tmppath))
+        elif filepath.endswith(".dungeondraft_pack"):
+          os.system("$GOPATH/bin/dungeondraft-unpack '%s' '%s'" % (filepath, tmppath))
         else:
-          print("[ProcessTask] No configuration file found!")
-          log += "No configuration file found!\n"
+          sys.exit("Invalid file %s" % filepath)
+
+        print("[ProcessTask] Unzipped in %.1f seconds" % (time() - secs))
+        log += "Unzipped in %.1f seconds\n" % (time() - secs)
+
+        # change permissions (just in case)
+        os.system("chmod -R 755 '%s'" % tmppath)
 
         ###
-        ### PRE PROCESSING #4 (maps based on specific extension : introduced for PogsProps)
+        ### PRE CLEANUP
+        ### - remove all __MACOSX folders
+        ### - remove all files larger than 20 MB
         ###
-        if cfg and "maps" in cfg and cfg["maps"].find("*") == 0:
-          for root, dirs, files in os.walk(os.path.join(tmppath, dir)):
-            for file in files:
-              if file.endswith(cfg["maps"][1:]):
-                map = os.path.join(root, os.path.splitext(file)[0] + ".json")
-                name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
-                name = ' '.join(elem.capitalize() for elem in name.split())
-                data = {
-                  "name": name,
-                  "navigation": False
+        os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+        os.system("find '%s' -type f -name '.*' -exec rm -f {} \;" % tmppath)
+        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -rf {} \;" % tmppath)
+
+        ###
+        ### SCENE PACKER
+        ###
+        task["packer"] = False
+        if os.path.isfile( os.path.join(tmppath, dir, "scene-packer.info") ):
+          print("[ProcessTask] Scene Packer identified.")
+          task["packer"] = True
+          processScenePacker(tmppath, dir, container)
+
+          if DEBUG:
+            print("Stopping before CLEANUP")
+            exit(1)
+
+        ###
+        ### REGULAR PACK
+        ###
+        else:
+
+          ###
+          ### PRE PROCESSING #1.a
+          ### - extract information from any existing module
+          ###
+          fvttModulePath = os.path.join(tmppath, dir, "module.json")
+          configPath = os.path.join(tmppath, dir, "json", "config.json")
+          if not os.path.isfile(configPath):
+            configPath = os.path.join(tmppath, dir, "config.json")
+
+          if os.path.isfile(fvttModulePath) and not os.path.isfile(configPath):
+            with open(fvttModulePath, 'r') as f:
+              data = json.load(f)
+              if "name" in data or "id" in data:
+                # V10 (id), V9 (name)
+                moduleID = data["id"] if "id" in data else data["name"]
+
+                print("[ProcessTask] Foundry VTT module.json file found with name '%s'" % moduleID)
+                log += "Foundry VTT module.json file found with name '%s'\n" % moduleID
+
+                config = {
+                  "depPath" : "modules/%s" % moduleID
                 }
-                with open(os.path.join(root, map), "w") as fw:
-                  fw.write(json.dumps(data, separators=(',', ':')))
+                with open(configPath, 'w') as out:
+                  json.dump(config, out)
 
-        ###
-        ### IMAGE CONVERSION
-        ### - converts all images to webp format
-        ### - generates thumbnails
-        ###
-        secs = time()
-        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
-        print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
-        log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
+          ###
+          ### PRE PROCESSING #1.b
+          ### - extract information from any existing module
+          ###
+          fvttWorldPath = os.path.join(tmppath, dir, "world.json")
 
-        ###
-        ### AUDIO CONVERSION
-        ### - converts all .aac audio to .ogg format
-        ###
-        secs = time()
-        for root, dirs, files in os.walk(tmppath):
-          for file in files:
-            if(file.lower().endswith(".aac")):
-              aacFile = os.path.join(root, file)
-              oggFile = os.path.splitext(aacFile)[0] + ".ogg"
-              print("Processing " + aacFile)
-              os.system("ffmpeg -loglevel quiet -stats -n -i \"%s\" \"%s\"" % (aacFile, oggFile))
+          if os.path.isfile(fvttWorldPath) and not os.path.isfile(configPath):
+            with open(fvttWorldPath, 'r') as f:
+              data = json.load(f)
+              if "name" in data or "id" in data:
+                # V10 (id), V9 (name)
+                moduleID = data["id"] if "id" in data else data["name"]
 
-        print("[ProcessTask] Conversion from aac to ogg in %.1f seconds" % (time() - secs))
-        log += "Conversion from aac to ogg in %.1f seconds\n" % (time() - secs)
+                print("[ProcessTask] Foundry VTT world.json file found with name '%s'" % moduleID)
+                log += "Foundry VTT world.json file found with name '%s'\n" % moduleID
 
-        ###
-        ### GENERATE MAPS FROM IMAGE or VIDEO
-        ###
-        if cfg and "maps" in cfg and cfg["maps"].find("*") < 0:
-          for root, dirs, files in os.walk(os.path.join(tmppath, dir, cfg["maps"])):
-            for file in files:
-              if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
-                map = os.path.join(root, os.path.splitext(file)[0] + ".json")
-                name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
-                name = ' '.join(elem.capitalize() for elem in name.split())
-                data = {
-                  "name": name,
-                  "navigation": False
+                config = {
+                  "depPath" : "worlds/%s" % moduleID
                 }
-                with open(os.path.join(root, map), "w") as fw:
-                  fw.write(json.dumps(data, separators=(',', ':')))
+                with open(configPath, 'w') as out:
+                  json.dump(config, out)
 
-        # POST PROCESSING
-        thumbsToDelete = []
-        for root, dirs, files in os.walk(tmppath):
-          for file in files:
+          ###
+          ### PRE PROCESSING #2
+          ### - extracts all entries from compendiums (if type supported)
+          ###
+          for root, dirs, files in os.walk(tmppath):
+            for file in files:
+              if file.endswith(".db"):
+                with open(os.path.join(root,file), 'r') as f:
+                  for line in f:
+                    data = json.loads(line)
+                    if "name" in data:
+                      filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
+                      folder = None
 
-            ###
-            ### VIDEO PROCESSING
-            ### - look for exising thumbnail
-            ###
-            if file.endswith(".webm") or file.endswith(".mp4"):
-              print("[ProcessTask] - Webm/mp4 %s ... " % file)
-              log += "- Webm/mp4 %s ...\n" % file
+                      # special case (dummy scene)
+                      if data["name"] == "#[CF_tempEntity]":
+                        print("Skipping scene with name %s" % data["name"])
+                        continue;
 
-              thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
-              # thumbnail already exists
-              if os.path.isfile(thumb):
-                continue
+                      # actors => prefab
+                      if "type" in data and data["type"] == "npc":
+                        folder = os.path.join(tmppath, dir, "json", "prefabs")
+                      # navigation => scene
+                      elif "navigation" in data:
+                        folder = os.path.join(tmppath, dir, "json", "maps")
 
-              # look for a matching webp file
-              found = None
-              for f in os.listdir(root):
-                if not f.endswith(".webp"):
+                      if folder:
+                        os.system("mkdir -p '%s'" % folder)
+                        with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                          json.dump(data, out)
+
+          ###
+          ### PRE PROCESSING #3 (special for Baileywiki)
+          ### - assuming that all images in json/ folder are thumbnails, generate thumbnail and keep origin accordingly
+          ###
+          for root, dirs, files in os.walk(os.path.join(TMP, "mtte", dir, "json")):
+            for file in files:
+              if file.endswith(".webp") and not "_thumb" in file:
+                source = os.path.join(root, file)
+                # generate thumbnail
+                target = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+                os.system('convert "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (source, target))
+                # generate original source
+                target = os.path.join(root, os.path.splitext(file)[0] + "_thumb_orig.webp")
+                os.rename(source, target)
+
+          # load configuration if exists
+          cfg = None
+          if os.path.isfile(configPath):
+            with open(configPath, "r") as f:
+              cfg = json.load(f)
+          else:
+            print("[ProcessTask] No configuration file found!")
+            log += "No configuration file found!\n"
+
+          ###
+          ### PRE PROCESSING #4 (maps based on specific extension : introduced for PogsProps)
+          ###
+          if cfg and "maps" in cfg and cfg["maps"].find("*") == 0:
+            for root, dirs, files in os.walk(os.path.join(tmppath, dir)):
+              for file in files:
+                if file.endswith(cfg["maps"][1:]):
+                  map = os.path.join(root, os.path.splitext(file)[0] + ".json")
+                  name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
+                  name = ' '.join(elem.capitalize() for elem in name.split())
+                  data = {
+                    "name": name,
+                    "navigation": False
+                  }
+                  with open(os.path.join(root, map), "w") as fw:
+                    fw.write(json.dumps(data, separators=(',', ':')))
+
+          ###
+          ### IMAGE CONVERSION
+          ### - converts all images to webp format
+          ### - generates thumbnails
+          ###
+          secs = time()
+          os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
+          print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
+          log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
+
+          ###
+          ### AUDIO CONVERSION
+          ### - converts all .aac audio to .ogg format
+          ###
+          secs = time()
+          for root, dirs, files in os.walk(tmppath):
+            for file in files:
+              if(file.lower().endswith(".aac")):
+                aacFile = os.path.join(root, file)
+                oggFile = os.path.splitext(aacFile)[0] + ".ogg"
+                print("Processing " + aacFile)
+                os.system("ffmpeg -loglevel quiet -stats -n -i \"%s\" \"%s\"" % (aacFile, oggFile))
+
+          print("[ProcessTask] Conversion from aac to ogg in %.1f seconds" % (time() - secs))
+          log += "Conversion from aac to ogg in %.1f seconds\n" % (time() - secs)
+
+          ###
+          ### GENERATE MAPS FROM IMAGE or VIDEO
+          ###
+          if cfg and "maps" in cfg and cfg["maps"].find("*") < 0:
+            for root, dirs, files in os.walk(os.path.join(tmppath, dir, cfg["maps"])):
+              for file in files:
+                if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
+                  map = os.path.join(root, os.path.splitext(file)[0] + ".json")
+                  name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
+                  name = ' '.join(elem.capitalize() for elem in name.split())
+                  data = {
+                    "name": name,
+                    "navigation": False
+                  }
+                  with open(os.path.join(root, map), "w") as fw:
+                    fw.write(json.dumps(data, separators=(',', ':')))
+
+          # POST PROCESSING
+          thumbsToDelete = []
+          for root, dirs, files in os.walk(tmppath):
+            for file in files:
+
+              ###
+              ### VIDEO PROCESSING
+              ### - look for exising thumbnail
+              ###
+              if file.endswith(".webm") or file.endswith(".mp4"):
+                print("[ProcessTask] - Webm/mp4 %s ... " % file)
+                log += "- Webm/mp4 %s ...\n" % file
+
+                thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
+                # thumbnail already exists
+                if os.path.isfile(thumb):
                   continue
 
-              if found:
-                shutil.copyfile(found, thumb)
-                if not found in thumbsToDelete:
-                  thumbsToDelete.append(found)
-              #else:
-              #  print("- No thumbnail found for %s ... " % file)
-              #  log += "- No thumbnail found for %s ...\n" % file
-              else:
-                print("[ProcessTask] - Generating thumbnail for video: %s" % file)
-                # try to generate a new thumbnail from the video
-                videoPath = os.path.join(root, file)
-                thumbFilename = os.path.join(root, os.path.splitext(file)[0])
-                os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
-                #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
+                # look for a matching webp file
+                found = None
+                for f in os.listdir(root):
+                  if not f.endswith(".webp"):
+                    continue
+
+                if found:
+                  shutil.copyfile(found, thumb)
+                  if not found in thumbsToDelete:
+                    thumbsToDelete.append(found)
+                #else:
+                #  print("- No thumbnail found for %s ... " % file)
+                #  log += "- No thumbnail found for %s ...\n" % file
+                else:
+                  print("[ProcessTask] - Generating thumbnail for video: %s" % file)
+                  # try to generate a new thumbnail from the video
+                  videoPath = os.path.join(root, file)
+                  thumbFilename = os.path.join(root, os.path.splitext(file)[0])
+                  os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
+                  #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
 
 
-        for root, dirs, files in os.walk(tmppath):
-          for file in files:
+          for root, dirs, files in os.walk(tmppath):
+            for file in files:
 
-            ###
-            ### MAPS PROCESSING (JSON)
-            ### - look for matching image (or delete)
-            ### - generate thumbnail image (if not provided)
-            ### - compress json file
-            ###
-            ### PREFABS PROCESSING (JSON)
-            ### - look for all dependencies and replace with => #DEP#<path>
-            ### - compress json file
-            ###
-            if file.endswith(".json"):
-              with open(os.path.join(root, file), "r") as f:
-                # replace all %20 or similar (URL decode). Hopefully, this will not break anything else :-)
-                content = unquote(f.read().replace('\n', ''))
+              ###
+              ### MAPS PROCESSING (JSON)
+              ### - look for matching image (or delete)
+              ### - generate thumbnail image (if not provided)
+              ### - compress json file
+              ###
+              ### PREFABS PROCESSING (JSON)
+              ### - look for all dependencies and replace with => #DEP#<path>
+              ### - compress json file
+              ###
+              if file.endswith(".json"):
+                with open(os.path.join(root, file), "r") as f:
+                  # replace all %20 or similar (URL decode). Hopefully, this will not break anything else :-)
+                  content = unquote(f.read().replace('\n', ''))
 
-                # if depPath defined => replace all paths with #DEP#
-                if cfg and "depPath" in cfg:
-                  content = content.replace("\"%s/" % cfg["depPath"], "\"#DEP#")
-                  if "external" in cfg:
-                    for idx, dep in enumerate(cfg["external"]):
-                      content = content.replace("\"%s/" % dep["src"], "\"#DEP%d#" % idx)
+                  # if depPath defined => replace all paths with #DEP#
+                  if cfg and "depPath" in cfg:
+                    content = content.replace("\"%s/" % cfg["depPath"], "\"#DEP#")
+                    if "external" in cfg:
+                      for idx, dep in enumerate(cfg["external"]):
+                        content = content.replace("\"%s/" % dep["src"], "\"#DEP%d#" % idx)
 
-                  # make sure that all assets are in webm format
-                  content = re.sub(r'"(#DEP[^"]*).(?:png|jpg)"', '"\g<1>.webp"', content)
-
-                  with open(os.path.join(root, file), "w") as fw:
-                    fw.write(content)
-
-                data = json.loads(content)
-                backgroundImage = None
-                # UP TO V9
-                if "img" in data:
-                  backgroundImage = data["img"]
-                # FROM V10
-                elif "background" in data and "src" in data["background"]:
-                  backgroundImage = data["background"]["src"]
-
-                if "type" in data and data["type"] == "npc":
-                  # nothing more to do
-                  print("- Prefab %s ... " % file)
-                  log += "- Prefab %s ...\n" % file
-
-                elif "navigation" in data:
-                  # look for default location for scene image (same folder, same name) OR look for "img" in JSON
-                  image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
-                  if not os.path.isfile(image):
-                    if backgroundImage and len(backgroundImage) > 0:
-                      idx = root.find('/', len(tmppath)+2)
-                      rootFolder = root[0:idx] if idx >= 0 else root
-                      imagePath = unquote(os.path.join(rootFolder, backgroundImage.replace("#DEP#", "")))
-                      # copy background image file near json file (required to match with thumbnail)
-                      if re.match("#DEP\d#", backgroundImage):
-                        print("[ProcessTask] Thumbnail is not possible from external pack: %s" % backgroundImage)
-                        image = imagePath
-                      elif os.path.isfile(imagePath):
-                        srcExt = os.path.splitext(imagePath)[1]
-                        # special case for animated maps. Also copy the webm/mp4 file (WHY??? => disabling)
-                        if srcExt in [".webm", ".mp4"]:
-                          #shutil.copyfile(imagePath, os.path.join(root, os.path.splitext(file)[0] + srcExt))
-                          shutil.copyfile(os.path.splitext(imagePath)[0] + ".webp", image)
-                        else:
-                          shutil.copyfile(imagePath, image)
-                      else:
-                        print("[ProcessTask] - No match and image %s doesn't exist" % imagePath)
-                        log += "[ProcessTask] - No match and image %s doesn't exist" % imagePath
-
-                    else:
-                      print("[ProcessTask] - Map %s with missing img path. Using empty image" % file)
-                      log += "- Map %s with missing img path. Using empty image\n" % file
-                      shutil.copyfile("noimage.webp", image)
-                      continue
-
-                  # if image path depends on another pack => don't generate thumbnail (assume it was done)
-                  imgExternal = re.match("#DEP\d#", backgroundImage) if backgroundImage else None
-                  if imgExternal or os.path.isfile(image):
-                    print("[ProcessTask] - Scene %s ... " % file)
-                    log += "- Scene %s ...\n" % file
-
-                    idx = root.find('/', len(tmppath)+2)
-                    rootFolder = root[0:idx] if idx >= 0 else root
-                    imgPath = image[len(rootFolder)+1:]
-
-                    # support for video (webm/mp4) as image file (webp image also exists)
-                    if os.path.isfile(os.path.join(root, os.path.splitext(file)[0] + ".mp4")):
-                      imgPath = os.path.splitext(imgPath)[0] + ".mp4"
-                    elif os.path.isfile(os.path.join(root, os.path.splitext(file)[0] + ".webm")):
-                      imgPath = os.path.splitext(imgPath)[0] + ".webm"
-
-                    if not imgExternal:
-                      # replace img path (except for WebM (video))
-                      if not backgroundImage or not backgroundImage.endswith("webm"):
-                        # V10
-                        if "background" in data and "src" in data["background"]:
-                          data["background"]["src"] = "#DEP#%s" % imgPath
-                        # V9
-                        else:
-                          data["img"] = "#DEP#%s" % imgPath
-
-                      # generate thumbnail
-                      thumbPath = os.path.splitext(image)[0] + "_thumb.webp"
-                      if not os.path.isfile(thumbPath):
-                        os.system('convert "%s" -thumbnail 400x400^ -gravity center -extent 400x400 "%s"' % (image, thumbPath))
-
-                    if "thumb" in data:
-                      del data['thumb']
-                    if "_priorThumbPath" in data:
-                      del data['_priorThumbPath']
+                    # make sure that all assets are in webm format
+                    content = re.sub(r'"(#DEP[^"]*).(?:png|jpg)"', '"\g<1>.webp"', content)
 
                     with open(os.path.join(root, file), "w") as fw:
-                      fw.write(json.dumps(data, separators=(',', ':')))
+                      fw.write(content)
 
+                  data = json.loads(content)
+                  backgroundImage = None
+                  # UP TO V9
+                  if "img" in data:
+                    backgroundImage = data["img"]
+                  # FROM V10
+                  elif "background" in data and "src" in data["background"]:
+                    backgroundImage = data["background"]["src"]
+
+                  if "type" in data and data["type"] == "npc":
+                    # nothing more to do
+                    print("- Prefab %s ... " % file)
+                    log += "- Prefab %s ...\n" % file
+
+                  elif "navigation" in data:
+                    # look for default location for scene image (same folder, same name) OR look for "img" in JSON
+                    image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
+                    if not os.path.isfile(image):
+                      if backgroundImage and len(backgroundImage) > 0:
+                        idx = root.find('/', len(tmppath)+2)
+                        rootFolder = root[0:idx] if idx >= 0 else root
+                        imagePath = unquote(os.path.join(rootFolder, backgroundImage.replace("#DEP#", "")))
+                        # copy background image file near json file (required to match with thumbnail)
+                        if re.match("#DEP\d#", backgroundImage):
+                          print("[ProcessTask] Thumbnail is not possible from external pack: %s" % backgroundImage)
+                          image = imagePath
+                        elif os.path.isfile(imagePath):
+                          srcExt = os.path.splitext(imagePath)[1]
+                          # special case for animated maps. Also copy the webm/mp4 file (WHY??? => disabling)
+                          if srcExt in [".webm", ".mp4"]:
+                            #shutil.copyfile(imagePath, os.path.join(root, os.path.splitext(file)[0] + srcExt))
+                            shutil.copyfile(os.path.splitext(imagePath)[0] + ".webp", image)
+                          else:
+                            shutil.copyfile(imagePath, image)
+                        else:
+                          print("[ProcessTask] - No match and image %s doesn't exist" % imagePath)
+                          log += "[ProcessTask] - No match and image %s doesn't exist" % imagePath
+
+                      else:
+                        print("[ProcessTask] - Map %s with missing img path. Using empty image" % file)
+                        log += "- Map %s with missing img path. Using empty image\n" % file
+                        shutil.copyfile("noimage.webp", image)
+                        continue
+
+                    # if image path depends on another pack => don't generate thumbnail (assume it was done)
+                    imgExternal = re.match("#DEP\d#", backgroundImage) if backgroundImage else None
+                    if imgExternal or os.path.isfile(image):
+                      print("[ProcessTask] - Scene %s ... " % file)
+                      log += "- Scene %s ...\n" % file
+
+                      idx = root.find('/', len(tmppath)+2)
+                      rootFolder = root[0:idx] if idx >= 0 else root
+                      imgPath = image[len(rootFolder)+1:]
+
+                      # support for video (webm/mp4) as image file (webp image also exists)
+                      if os.path.isfile(os.path.join(root, os.path.splitext(file)[0] + ".mp4")):
+                        imgPath = os.path.splitext(imgPath)[0] + ".mp4"
+                      elif os.path.isfile(os.path.join(root, os.path.splitext(file)[0] + ".webm")):
+                        imgPath = os.path.splitext(imgPath)[0] + ".webm"
+
+                      if not imgExternal:
+                        # replace img path (except for WebM (video))
+                        if not backgroundImage or not backgroundImage.endswith("webm"):
+                          # V10
+                          if "background" in data and "src" in data["background"]:
+                            data["background"]["src"] = "#DEP#%s" % imgPath
+                          # V9
+                          else:
+                            data["img"] = "#DEP#%s" % imgPath
+
+                        # generate thumbnail
+                        thumbPath = os.path.splitext(image)[0] + "_thumb.webp"
+                        if not os.path.isfile(thumbPath):
+                          os.system('convert "%s" -thumbnail 400x400^ -gravity center -extent 400x400 "%s"' % (image, thumbPath))
+
+                      if "thumb" in data:
+                        del data['thumb']
+                      if "_priorThumbPath" in data:
+                        del data['_priorThumbPath']
+
+                      with open(os.path.join(root, file), "w") as fw:
+                        fw.write(json.dumps(data, separators=(',', ':')))
+
+                    else:
+                      print("[ProcessTask] - Map %s without image (%s). Skipped" % (file, image))
+                      log += "- Map %s without image (%s). Skipped\n" % (file, image)
+                      os.remove(os.path.join(root, file))
+
+          ###
+          ### Generate thumbnails if not exist
+          ###
+          secs = time()
+          for root, dirs, files in os.walk(tmppath):
+            for file in files:
+              if file.endswith(".webp") and not "_thumb" in file:
+                thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+                if not os.path.isfile(thumbPath):
+                  imagePath = os.path.join(root, file)
+                  os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
+                  if os.path.isfile(thumbPath):
+                    print("[ProcessTask] - Thumbnail generated for %s" % file)
+                    log += "- Thumbnail generated for %s\n" % file
                   else:
-                    print("[ProcessTask] - Map %s without image (%s). Skipped" % (file, image))
-                    log += "- Map %s without image (%s). Skipped\n" % (file, image)
-                    os.remove(os.path.join(root, file))
+                    print("[ProcessTask] - Thumbnail NOT GENERATED as expected for %s" % file)
+                    log += "- Thumbnail NOT GENERATED as expected for %s\n" % file
 
-        ###
-        ### Generate thumbnails if not exist
-        ###
-        secs = time()
-        for root, dirs, files in os.walk(tmppath):
-          for file in files:
-            if file.endswith(".webp") and not "_thumb" in file:
-              thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
-              if not os.path.isfile(thumbPath):
-                imagePath = os.path.join(root, file)
-                os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
-                if os.path.isfile(thumbPath):
-                  print("[ProcessTask] - Thumbnail generated for %s" % file)
-                  log += "- Thumbnail generated for %s\n" % file
-                else:
-                  print("[ProcessTask] - Thumbnail NOT GENERATED as expected for %s" % file)
-                  log += "- Thumbnail NOT GENERATED as expected for %s\n" % file
+          print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
+          log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
 
-        print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
-        log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
+          ###
+          ### Extract audio information
+          ###
+          audioInfo = {}
+          packBasePath = os.path.join(tmppath, dir)
+          for root, dirs, files in os.walk(tmppath):
+            for file in files:
+              if file.endswith(".ogg") or file.endswith(".mp3"):
+                audioFile = os.path.join(root, file)
+                relPath = os.path.join(root, file)[len(packBasePath)+1:]
 
-        ###
-        ### Extract audio information
-        ###
-        audioInfo = {}
-        packBasePath = os.path.join(tmppath, dir)
-        for root, dirs, files in os.walk(tmppath):
-          for file in files:
-            if file.endswith(".ogg") or file.endswith(".mp3"):
-              audioFile = os.path.join(root, file)
-              relPath = os.path.join(root, file)[len(packBasePath)+1:]
+                title = None
+                duration = 0
+                try:
+                  tag = TinyTag.get(audioFile)
+                  title = tag.title if tag.title else None
+                  duration = round(tag.duration) if tag.duration else 0
+                except Exception as e:
+                  print("Couldn't extract tag", e)
 
-              title = None
-              duration = 0
-              try:
-                tag = TinyTag.get(audioFile)
-                title = tag.title if tag.title else None
-                duration = round(tag.duration) if tag.duration else 0
-              except Exception as e:
-                print("Couldn't extract tag", e)
+                if not duration:
+                  with audioread.audio_open(audioFile) as f:
+                    duration = f.duration
 
-              if not duration:
-                with audioread.audio_open(audioFile) as f:
-                  duration = f.duration
+                audioInfo[relPath] = { "duration": duration }
+                if title and len(title) > 0:
+                  audioInfo[relPath]['title'] = title
 
-              audioInfo[relPath] = { "duration": duration }
-              if title and len(title) > 0:
-                audioInfo[relPath]['title'] = title
+                if file.lower().find("loop") > 0:
+                  audioInfo[relPath]['loop'] = True
 
-              if file.lower().find("loop") > 0:
-                audioInfo[relPath]['loop'] = True
+          if len(audioInfo.keys()) > 0:
+            with open(os.path.join(packBasePath, "audioInfo.json"), "w") as out:
+              json.dump(audioInfo, out)
 
-        if len(audioInfo.keys()) > 0:
-          with open(os.path.join(packBasePath, "audioInfo.json"), "w") as out:
-            json.dump(audioInfo, out)
+          if DEBUG:
+            print("Stopping before CLEANUP")
+            exit(1)
 
-        if DEBUG:
-          print("Stopping before CLEANUP")
-          exit(1)
+          ###
+          ### CLEANUP
+          ###
 
-        ###
-        ### CLEANUP
-        ###
+          # remove all thumbnails (to avoid them to appear in Foundry)
+          for t in thumbsToDelete:
+            os.remove(t)
 
-        # remove all thumbnails (to avoid them to appear in Foundry)
-        for t in thumbsToDelete:
-          os.remove(t)
+          # delete original files, rename webp files and remove all non-supported files
+          secs = time()
+          os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -not -iname \*.wav -not -iname \*.json -exec rm '{}' \;" % tmppath)
+          print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
+          log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
-        # delete original files, rename webp files and remove all non-supported files
-        secs = time()
-        os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -not -iname \*.wav -not -iname \*.json -exec rm '{}' \;" % tmppath)
-        print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
-        log += "Cleanup in %.1f seconds\n" % (time() - secs)
-
-        ###
-        ### Generate watermarked versions
-        ###
-        secs = time()
-        for root, dirs, files in os.walk(tmppath):
-          for file in files:
-            if file.endswith(".webp") and not "_thumb" in file:
-              baseDir = os.path.join(TMP, "mtte")
-              basePath = os.path.join(root, file)[len(baseDir)+1:]
-              basePath = os.path.splitext(basePath)[0]
-              wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp")
-              if not os.path.isdir(os.path.dirname(wmPath)):
-                os.makedirs(os.path.dirname(wmPath))
-              os.system('convert -thumbnail 100x100 -background none -gravity center "%s" -extent 100x100 /tmp/img.webp' % (os.path.join(root,file)))
-              os.system('composite watermark.png /tmp/img.webp -gravity Center "%s"' % (wmPath))
-
-        # maps
-        for root, dirs, files in os.walk(tmppath):
-          for file in files:
-            if file.endswith(".json"):
-              imgPath = os.path.splitext(file)[0] + ".webp"
-              if os.path.isfile( os.path.join(root, imgPath) ):
+          ###
+          ### Generate watermarked versions
+          ###
+          secs = time()
+          for root, dirs, files in os.walk(tmppath):
+            for file in files:
+              if file.endswith(".webp") and not "_thumb" in file:
                 baseDir = os.path.join(TMP, "mtte")
-                basePath = os.path.join(root, imgPath)[len(baseDir)+1:]
+                basePath = os.path.join(root, file)[len(baseDir)+1:]
                 basePath = os.path.splitext(basePath)[0]
                 wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp")
                 if not os.path.isdir(os.path.dirname(wmPath)):
                   os.makedirs(os.path.dirname(wmPath))
-                os.system('convert -thumbnail 400x400 -background none -gravity center "%s" -extent 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
-                os.system('composite watermark-map.png /tmp/img.webp -gravity Center "%s"' % (wmPath))
+                os.system('convert -thumbnail 100x100 -background none -gravity center "%s" -extent 100x100 /tmp/img.webp' % (os.path.join(root,file)))
+                os.system('composite watermark.png /tmp/img.webp -gravity Center "%s"' % (wmPath))
 
-        # chg permissions
-        os.system('chmod 775 -R %s' % (os.path.join(PREVIEW_FOLDER, container)))
+          # maps
+          for root, dirs, files in os.walk(tmppath):
+            for file in files:
+              if file.endswith(".json"):
+                imgPath = os.path.splitext(file)[0] + ".webp"
+                if os.path.isfile( os.path.join(root, imgPath) ):
+                  baseDir = os.path.join(TMP, "mtte")
+                  basePath = os.path.join(root, imgPath)[len(baseDir)+1:]
+                  basePath = os.path.splitext(basePath)[0]
+                  wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp")
+                  if not os.path.isdir(os.path.dirname(wmPath)):
+                    os.makedirs(os.path.dirname(wmPath))
+                  os.system('convert -thumbnail 400x400 -background none -gravity center "%s" -extent 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
+                  os.system('composite watermark-map.png /tmp/img.webp -gravity Center "%s"' % (wmPath))
 
-        print("[ProcessTask] Watermarked images generated in %.1f seconds" % (time() - secs))
-        log += "Watermarked images generated in %.1f seconds\n" % (time() - secs)
+          # chg permissions
+          os.system('chmod 775 -R %s' % (os.path.join(PREVIEW_FOLDER, container)))
 
-        ###
-        ### LOG
-        ###
-        log += "\n\nDependencies:\n"
+          print("[ProcessTask] Watermarked images generated in %.1f seconds" % (time() - secs))
+          log += "Watermarked images generated in %.1f seconds\n" % (time() - secs)
 
-        folder = None
-        # find unique folder in tmp
-        for d in os.listdir(tmppath):
-          if os.path.isdir(os.path.join(tmppath, d)):
-            folder = d
-            break
+          ###
+          ### LOG
+          ###
+          log += "\n\nDependencies:\n"
 
-        if folder:
-          logPath = os.path.join(tmppath, folder, "info.log")
-          with open(logPath, 'w') as out:
-            out.write(log)
-          os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> '%s'" % (tmppath, logPath))
+          folder = None
+          # find unique folder in tmp
+          for d in os.listdir(tmppath):
+            if os.path.isdir(os.path.join(tmppath, d)):
+              folder = d
+              break
 
-      ### -------------------------------------------
-      
-      # clear existing blobs (if any)
-      secs = time()
-      if os.path.isdir(dirpath):
-        os.system("rm -rf '%s'" % dirpath)
+          if folder:
+            logPath = os.path.join(tmppath, folder, "info.log")
+            with open(logPath, 'w') as out:
+              out.write(log)
+            os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> '%s'" % (tmppath, logPath))
 
-      # move files to target
-      secs = time()
-      os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
-      print("[ProcessTask] Copied to output folder in %.1f seconds" % (time() - secs))
+        ### -------------------------------------------
 
-      # cleanup
-      if os.path.isdir(tmppath):
-        os.system("rm -rf '%s'" % tmppath)
-        
-      # update task status
-      task["status"] = "done"
-        
-    else:
-      print("[ProcessTask] Blob %s doesn't exist ! Skipping..." % blob)
+        # clear existing blobs (if any)
+        secs = time()
+        if os.path.isdir(dirpath):
+          os.system("rm -rf '%s'" % dirpath)
+
+        # move files to target
+        secs = time()
+        os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
+        print("[ProcessTask] Copied to output folder in %.1f seconds" % (time() - secs))
+
+        # cleanup
+        if os.path.isdir(tmppath):
+          os.system("rm -rf '%s'" % tmppath)
+
+        # update task status
+        task["status"] = "done"
+
+      else:
+        raise Exception("[ProcessTask] Blob %s doesn't exist ! Skipping..." % blob)
+
+    # Exception handling
+    except Exception as e:
+      print("[ProcessTask] Exception during processing")
+      print(e)
       task["status"] = "failed"
-
 
 # write statuses
 with open(os.path.join(TMP, TASKS_STATUS), "w") as outfile:
