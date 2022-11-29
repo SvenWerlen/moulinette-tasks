@@ -87,241 +87,247 @@ if len(tasks) > 0:
     blob = task["packFile"]
     container = task["container"]
     filepath = os.path.join(OUTPUT_FOLDER, container, blob)
-    if os.path.isfile(filepath):
-      dir = os.path.splitext(os.path.basename(filepath))[0]
-      dirpath = os.path.join(OUTPUT_FOLDER, container, dir)
-      tmppath = os.path.join(TMP, "mtte")    
-      print("[ProcessTask] Processing '%s'" % blob)
-          
-      # prepare
-      if os.path.isdir(tmppath):
-        os.system("rm -rf '%s'" % tmppath)
-      os.mkdir(tmppath)
-      
-      # extract archive
-      secs = time()
-      if filepath.endswith(".zip"):
-        os.system("./sunzip.sh '%s' '%s'" % (filepath, tmppath))
-      elif filepath.endswith(".dungeondraft_pack"):
-        os.system("$GOPATH/bin/dungeondraft-unpack '%s' '%s'" % (filepath, tmppath))
-      else:
-        sys.exit("Invalid file %s" % filepath)
-      
-      print("[ProcessTask] Unzipped in %.1f seconds" % (time() - secs))
-      log += "Unzipped in %.1f seconds\n" % (time() - secs)
-      
-      # change permissions (just in case)
-      os.system("chmod -R 755 '%s'" % tmppath)
-      
-      ###
-      ### PRE CLEANUP
-      ### - remove all __MACOSX folders
-      ### - remove all files larger than 20 MB
-      ###
-      os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
-      os.system("find '%s' -type f -name '.*' -exec rm -f {} \;" % tmppath)
-      os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -f {} \;" % tmppath)
-      
-      ###
-      ### IMAGE CONVERSION
-      ### - converts all images to webp format
-      ### - generates thumbnails
-      ###
-      secs = time()
-      os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
-      print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
-      log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
-      
-      ###
-      ### PRE PROCESSING
-      ### - simple maps (when "maps.mtte" file is added to pack)
-      ###
-      cfg = None
-      if os.path.isfile(os.path.join(tmppath, dir, "maps.mtte")):
-        for root, dirs, files in os.walk(os.path.join(tmppath, dir)):
+    try:
+      if os.path.isfile(filepath):
+        dir = os.path.splitext(os.path.basename(filepath))[0]
+        dirpath = os.path.join(OUTPUT_FOLDER, container, dir)
+        tmppath = os.path.join(TMP, "mtte")
+        print("[ProcessTask] Processing '%s'" % blob)
+
+        # prepare
+        if os.path.isdir(tmppath):
+          os.system("rm -rf '%s'" % tmppath)
+        os.mkdir(tmppath)
+
+        # extract archive
+        secs = time()
+        if filepath.endswith(".zip"):
+          os.system("./sunzip.sh '%s' '%s'" % (filepath, tmppath))
+        elif filepath.endswith(".dungeondraft_pack"):
+          os.system("$GOPATH/bin/dungeondraft-unpack '%s' '%s'" % (filepath, tmppath))
+        else:
+          sys.exit("Invalid file %s" % filepath)
+
+        print("[ProcessTask] Unzipped in %.1f seconds" % (time() - secs))
+        log += "Unzipped in %.1f seconds\n" % (time() - secs)
+
+        # change permissions (just in case)
+        os.system("chmod -R 755 '%s'" % tmppath)
+
+        ###
+        ### PRE CLEANUP
+        ### - remove all __MACOSX folders
+        ### - remove all files larger than 20 MB
+        ###
+        os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+        os.system("find '%s' -type f -name '.*' -exec rm -f {} \;" % tmppath)
+        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -f {} \;" % tmppath)
+
+        ###
+        ### IMAGE CONVERSION
+        ### - converts all images to webp format
+        ### - generates thumbnails
+        ###
+        secs = time()
+        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
+        print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
+        log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
+
+        ###
+        ### PRE PROCESSING
+        ### - simple maps (when "maps.mtte" file is added to pack)
+        ###
+        cfg = None
+        if os.path.isfile(os.path.join(tmppath, dir, "maps.mtte")):
+          for root, dirs, files in os.walk(os.path.join(tmppath, dir)):
+            for file in files:
+              if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
+                print("[ProcessTask] - Map generation for %s ... " % file)
+                log += "- Map generation for %s ...\n" % file
+
+                map = os.path.join(root, os.path.splitext(file)[0] + ".json")
+                name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
+                name = ' '.join(elem.capitalize() for elem in name.split())
+                data = {
+                  "name": name,
+                  "navigation": False,
+                  "img": "#DEP#" + os.path.splitext(file)[0] + ".webp"
+                }
+                # generate thumbnail
+                imgPath = os.path.join(root, file)
+                thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+                os.system('convert "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (imgPath, thumbPath))
+
+                with open(os.path.join(root, map), "w") as fw:
+                  fw.write(json.dumps(data, separators=(',', ':')))
+
+        # POST PROCESSING #1
+        thumbsToDelete = []
+        for root, dirs, files in os.walk(tmppath):
           for file in files:
-            if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
-              print("[ProcessTask] - Map generation for %s ... " % file)
-              log += "- Map generation for %s ...\n" % file
 
-              map = os.path.join(root, os.path.splitext(file)[0] + ".json")
-              name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
-              name = ' '.join(elem.capitalize() for elem in name.split())
-              data = {
-                "name": name,
-                "navigation": False,
-                "img": "#DEP#" + os.path.splitext(file)[0] + ".webp"
-              }
-              # generate thumbnail
-              imgPath = os.path.join(root, file)
-              thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
-              os.system('convert "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (imgPath, thumbPath))
+            ###
+            ### VIDEO PROCESSING
+            ### - look for exising thumbnail
+            ###
+            if file.endswith(".webm") or file.endswith(".mp4"):
+              print("[ProcessTask] - Webm/mp4 %s ... " % file)
+              log += "- Webm/mp4 %s ...\n" % file
 
-              with open(os.path.join(root, map), "w") as fw:
-                fw.write(json.dumps(data, separators=(',', ':')))
-
-      # POST PROCESSING #1
-      thumbsToDelete = []
-      for root, dirs, files in os.walk(tmppath):
-        for file in files:
-          
-          ###
-          ### VIDEO PROCESSING
-          ### - look for exising thumbnail
-          ###
-          if file.endswith(".webm") or file.endswith(".mp4"):
-            print("[ProcessTask] - Webm/mp4 %s ... " % file)
-            log += "- Webm/mp4 %s ...\n" % file
-            
-            thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
-            # thumbnail already exists
-            if os.path.isfile(thumb):
-              continue
-            
-            # look for a matching webp file
-            found = None
-            for f in os.listdir(root):
-              if not f.endswith(".webp"):
+              thumb = os.path.join(root, os.path.splitext(file)[0] + ".webp")
+              # thumbnail already exists
+              if os.path.isfile(thumb):
                 continue
-            
-            if found:
-              shutil.copyfile(found, thumb)
-              if not found in thumbsToDelete:
-                thumbsToDelete.append(found)
-            #else:
-            #  print("- No thumbnail found for %s ... " % file)
-            #  log += "- No thumbnail found for %s ...\n" % file
-            else:
-              print("[ProcessTask] - Generating thumbnail for video: %s" % file)
-              # try to generate a new thumbnail from the video
-              videoPath = os.path.join(root, file)
-              thumbFilename = os.path.join(root, os.path.splitext(file)[0])
-              os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
-              #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
 
-      # POST PROCESSING #2
-      for root, dirs, files in os.walk(tmppath):
-        for file in files:
+              # look for a matching webp file
+              found = None
+              for f in os.listdir(root):
+                if not f.endswith(".webp"):
+                  continue
 
-          ###
-          ### MAPS PROCESSING (JSON)
-          ### - look for matching image (or delete)
-          ###
-          if file.endswith(".json"):
-            with open(os.path.join(root, file), "r") as f:
-              content = f.read().replace('\n', '')
-
-              # make sure that all assets are in webp format
-              content = re.sub(r'"(#DEP[^"]*).(?:png|jpg|gif|jpeg)"', '"\g<1>.webp"', content)
-
-              data = json.loads(content)
-              backgroundImage = None
-              # UP TO V9
-              if "img" in data:
-                backgroundImage = data["img"]
-              # FROM V10
-              elif "background" in data and "src" in data["background"]:
-                backgroundImage = data["background"]["src"]
-
-              if "navigation" in data:
-                # look for default location for scene image (same folder, same name)
-                image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
-                thumb = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
-                if not os.path.isfile(image):
-                  # for WebM files, get extracted frame
-                  srcImage = backgroundImage.replace("#DEP#", os.path.join(tmppath, dir) + "/") if backgroundImage else ""
-                  srcImage = os.path.splitext(srcImage)[0] + ".webp"
-                  if os.path.isfile(srcImage):
-                    shutil.copyfile(srcImage, image)
-                  else:
-                    print("[ProcessTask] - Map %s with missing thumbnail. Skipped" % file)
-                    log += "- Map %s with missing thumbnail. Skipped\n" % file
-
-                    if not DEBUG:
-                      os.remove(os.path.join(root, file))
-
-                    continue
-
-                if not os.path.isfile(thumb):
-                  shutil.copyfile(image, thumb) # avoid thumbnail being generated
-
-              # compress JSON
-              with open(os.path.join(root, file), "w") as fw:
-                fw.write(json.dumps(data, separators=(',', ':')))
-
-            
-      ###
-      ### Generate thumbnails if not exist
-      ###    
-      secs = time()
-      for root, dirs, files in os.walk(tmppath):
-        for file in files:
-          if file.endswith(".webp") and not "_thumb" in file:
-            thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
-            if not os.path.isfile(thumbPath):
-              imagePath = os.path.join(root, file)
-              os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
-              if os.path.isfile(thumbPath):
-                print("[ProcessTask] - Thumbnail generated for %s" % file)
-                log += "- Thumbnail generated for %s\n" % file
+              if found:
+                shutil.copyfile(found, thumb)
+                if not found in thumbsToDelete:
+                  thumbsToDelete.append(found)
+              #else:
+              #  print("- No thumbnail found for %s ... " % file)
+              #  log += "- No thumbnail found for %s ...\n" % file
               else:
-                print("[ProcessTask] - Thumbnail NOT GENERATED as expected for %s" % file)
-                log += "- Thumbnail NOT GENERATED as expected for %s\n" % file
+                print("[ProcessTask] - Generating thumbnail for video: %s" % file)
+                # try to generate a new thumbnail from the video
+                videoPath = os.path.join(root, file)
+                thumbFilename = os.path.join(root, os.path.splitext(file)[0])
+                os.system('./thumbnailFromVideo.sh "%s" "%s"' % (videoPath, thumbFilename))
+                #os.system("ffmpeg -ss 1 -c:v libvpx-vp9 -i %s -frames:v 1 %s" % (os.path.join(root, file), thumb))
 
-      print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
-      log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
-      
-      if DEBUG:
-        print("Stopping before CLEANUP")
-        exit(1)
+        # POST PROCESSING #2
+        for root, dirs, files in os.walk(tmppath):
+          for file in files:
 
-      ###
-      ### CLEANUP
-      ###
-      
-      # remove all thumbnails (to avoid them to appear in Foundry)
-      for t in thumbsToDelete:
-        os.remove(t)
-      
-      # delete original files, rename webp files and remove all non-supported files
-      secs = time()
-      os.system("find '%s' -type f -not -iname \*.json -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -exec rm '{}' \;" % tmppath)
-      print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
-      log += "Cleanup in %.1f seconds\n" % (time() - secs)
+            ###
+            ### MAPS PROCESSING (JSON)
+            ### - look for matching image (or delete)
+            ###
+            if file.endswith(".json"):
+              with open(os.path.join(root, file), "r") as f:
+                content = f.read().replace('\n', '')
 
-      folder = None
-      # find unique folder in tmp
-      for d in os.listdir(tmppath):
-        if os.path.isdir(os.path.join(tmppath, d)):
-          folder = d
-          break
-      
-      if folder:
-        logPath = os.path.join(tmppath, folder, "info.log")
-        with open(logPath, 'w') as out:
-          out.write(log)
-      
-      # clear existing blobs (if any)
-      secs = time()
-      if os.path.isdir(dirpath):
-        os.system("rm -rf '%s'" % dirpath)
-      print("[ProcessTask] Existing blobs deleted in %.1f seconds" % (time() - secs))
-      
-      # move files to target
-      secs = time()
-      os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
-      print("[ProcessTask] Copied to output folder in %.1f seconds" % (time() - secs))
-      
-      # cleanup
-      if os.path.isdir(tmppath):
-        os.system("rm -rf '%s'" % tmppath)
+                # make sure that all assets are in webp format
+                content = re.sub(r'"(#DEP[^"]*).(?:png|jpg|gif|jpeg)"', '"\g<1>.webp"', content)
 
-      # update task status
-      task["newSize"] = getSize(dirpath)
-      task["status"] = "done"
-        
-    else:
-      print("[ProcessTask] PackFile %s doesn't exist ! Skipping..." % blob)
+                data = json.loads(content)
+                backgroundImage = None
+                # UP TO V9
+                if "img" in data:
+                  backgroundImage = data["img"]
+                # FROM V10
+                elif "background" in data and "src" in data["background"]:
+                  backgroundImage = data["background"]["src"]
+
+                if "navigation" in data:
+                  # look for default location for scene image (same folder, same name)
+                  image = os.path.join(root, os.path.splitext(file)[0] + ".webp")
+                  thumb = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+                  if not os.path.isfile(image):
+                    # for WebM files, get extracted frame
+                    srcImage = backgroundImage.replace("#DEP#", os.path.join(tmppath, dir) + "/") if backgroundImage else ""
+                    srcImage = os.path.splitext(srcImage)[0] + ".webp"
+                    if os.path.isfile(srcImage):
+                      shutil.copyfile(srcImage, image)
+                    else:
+                      print("[ProcessTask] - Map %s with missing thumbnail. Skipped" % file)
+                      log += "- Map %s with missing thumbnail. Skipped\n" % file
+
+                      if not DEBUG:
+                        os.remove(os.path.join(root, file))
+
+                      continue
+
+                  if not os.path.isfile(thumb):
+                    shutil.copyfile(image, thumb) # avoid thumbnail being generated
+
+                # compress JSON
+                with open(os.path.join(root, file), "w") as fw:
+                  fw.write(json.dumps(data, separators=(',', ':')))
+
+
+        ###
+        ### Generate thumbnails if not exist
+        ###
+        secs = time()
+        for root, dirs, files in os.walk(tmppath):
+          for file in files:
+            if file.endswith(".webp") and not "_thumb" in file:
+              thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
+              if not os.path.isfile(thumbPath):
+                imagePath = os.path.join(root, file)
+                os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
+                if os.path.isfile(thumbPath):
+                  print("[ProcessTask] - Thumbnail generated for %s" % file)
+                  log += "- Thumbnail generated for %s\n" % file
+                else:
+                  print("[ProcessTask] - Thumbnail NOT GENERATED as expected for %s" % file)
+                  log += "- Thumbnail NOT GENERATED as expected for %s\n" % file
+
+        print("[ProcessTask] Thumbnails generated in %.1f seconds" % (time() - secs))
+        log += "Thumbnails generated in %.1f seconds\n" % (time() - secs)
+
+        if DEBUG:
+          print("Stopping before CLEANUP")
+          exit(1)
+
+        ###
+        ### CLEANUP
+        ###
+
+        # remove all thumbnails (to avoid them to appear in Foundry)
+        for t in thumbsToDelete:
+          os.remove(t)
+
+        # delete original files, rename webp files and remove all non-supported files
+        secs = time()
+        os.system("find '%s' -type f -not -iname \*.json -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -exec rm '{}' \;" % tmppath)
+        print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
+        log += "Cleanup in %.1f seconds\n" % (time() - secs)
+
+        folder = None
+        # find unique folder in tmp
+        for d in os.listdir(tmppath):
+          if os.path.isdir(os.path.join(tmppath, d)):
+            folder = d
+            break
+
+        if folder:
+          logPath = os.path.join(tmppath, folder, "info.log")
+          with open(logPath, 'w') as out:
+            out.write(log)
+
+        # clear existing blobs (if any)
+        secs = time()
+        if os.path.isdir(dirpath):
+          os.system("rm -rf '%s'" % dirpath)
+        print("[ProcessTask] Existing blobs deleted in %.1f seconds" % (time() - secs))
+
+        # move files to target
+        secs = time()
+        os.system("mv '%s'/* '%s'" % (tmppath, dirpath))
+        print("[ProcessTask] Copied to output folder in %.1f seconds" % (time() - secs))
+
+        # cleanup
+        if os.path.isdir(tmppath):
+          os.system("rm -rf '%s'" % tmppath)
+
+        # update task status
+        task["newSize"] = getSize(dirpath)
+        task["status"] = "done"
+
+      else:
+        raise Exception("[ProcessTask] PackFile %s doesn't exist ! Skipping..." % blob)
+
+    # Exception handling
+    except Exception as e:
+      print("[ProcessTask] Exception during processing")
+      print(e)
       task["status"] = "failed"
       
   ############################################################################################################################
