@@ -91,11 +91,13 @@ for c in data:
     dir = "%s/%s" % (THUMB_FOLDER, path)
 
     for a in p["assets"]:
-      if not "img" in a:
-        print(a)
-        continue
-
-      assetPath = a["img"] if isinstance(a, dict) else a
+      assetPath = a
+      if isinstance(a, dict):
+        if "img" in a:
+          assetPath = a["img"]
+        else:
+          print(a)
+          continue
       thumb = os.path.splitext(assetPath)[0] + "_thumb.webp"
 
       fIndex = thumb.rfind("/")
