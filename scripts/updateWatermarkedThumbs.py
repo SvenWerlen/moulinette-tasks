@@ -91,7 +91,7 @@ for c in data:
     dir = "%s/%s" % (THUMB_FOLDER, path)
 
     for a in p["assets"]:
-      if not "img" in assetPath:
+      if not "img" in a:
         print(a)
         continue
 
