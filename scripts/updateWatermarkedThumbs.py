@@ -95,6 +95,8 @@ for c in data:
       if isinstance(a, dict):
         if "img" in a:
           assetPath = a["img"]
+        elif "type" in a and a["type"] == "snd":
+          continue
         else:
           print(a)
           continue
