@@ -100,6 +100,10 @@ for c in data:
         else:
           print(a)
           continue
+
+      if len(assetPath) == 0:
+        continue;
+
       thumb = os.path.splitext(assetPath)[0] + "_thumb.webp"
 
       fIndex = thumb.rfind("/")
@@ -118,6 +122,7 @@ for c in data:
               os.system('composite "%s" "%s" -gravity Center "%s"' % (WATERMARK_MAP, TMP_THUMB2, thumbPath))
               print("[M] %s/%s" % (container, blob))
             else:
+
               print("[MISSING] %s/%s" % (container, blob))
               continue
           packMaps['assets'].append("%s/%s" % (path, thumb))
