@@ -91,6 +91,10 @@ for c in data:
     dir = "%s/%s" % (THUMB_FOLDER, path)
 
     for a in p["assets"]:
+      if not "img" in assetPath:
+        print(a)
+        continue
+
       assetPath = a["img"] if isinstance(a, dict) else a
       thumb = os.path.splitext(assetPath)[0] + "_thumb.webp"
 
