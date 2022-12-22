@@ -391,6 +391,8 @@ if len(tasks) > 0:
         ###
         else:
 
+          packs = []
+
           ###
           ### PRE PROCESSING #1.a
           ### - extract information from any existing module
@@ -416,6 +418,10 @@ if len(tasks) > 0:
                 with open(configPath, 'w') as out:
                   json.dump(config, out)
 
+                # extract compendiums info
+                if "packs" in data:
+                  packs = data["packs"]
+
           ###
           ### PRE PROCESSING #1.b
           ### - extract information from any existing module
@@ -438,6 +444,10 @@ if len(tasks) > 0:
                 with open(configPath, 'w') as out:
                   json.dump(config, out)
 
+                # extract compendiums info
+                if "packs" in data:
+                  packs = data["packs"]
+
           ###
           ### PRE PROCESSING #2
           ### - extracts all entries from compendiums (if type supported)
@@ -445,6 +455,13 @@ if len(tasks) > 0:
           for root, dirs, files in os.walk(tmppath):
             for file in files:
               if file.endswith(".db"):
+
+                # find matching compendium
+                type = None
+                for p in packs:
+                  if os.path.join(root,file).endswith(p["path"]):
+                    type = p["type"]
+
                 with open(os.path.join(root,file), 'r') as f:
                   for line in f:
                     data = json.loads(line)
@@ -457,8 +474,38 @@ if len(tasks) > 0:
                         print("Skipping scene with name %s" % data["name"])
                         continue;
 
+                      # support for Adventures
+                      # - explode elements in individual files
+                      if type == "Adventure":
+                        hasContent = False
+                        advPath = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
+                        if "scenes" in data and len(data["scenes"]) > 0:
+                          folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "scenes")
+                          os.system("mkdir -p '%s'" % folder)
+                          # extract scenes
+                          for sc in data["scenes"]:
+                            filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
+                            with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                              json.dump(sc, out)
+                          hasContent = True
+                        if "actors" in data and len(data["actors"]) > 0:
+                          folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "actors")
+                          os.system("mkdir -p '%s'" % folder)
+                          # extract actors
+                          for sc in data["actors"]:
+                            filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
+                            with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                              json.dump(sc, out)
+                          hasContent = True
+
+                        # store adventure information
+                        adventure = { "name": data["name"], "img": data["img"], "caption": data["caption"], "description": data["description"], "stats": data["_stats"] }
+                        with open(os.path.join(tmppath, dir, "json", "adventures", advPath, "adventure.json"), 'w') as out:
+                          json.dump(adventure, out)
+                        continue
+
                       # actors => prefab
-                      if "type" in data and data["type"] == "npc":
+                      elif "type" in data and data["type"] == "npc":
                         folder = os.path.join(tmppath, dir, "json", "prefabs")
                       # navigation => scene
                       elif "navigation" in data:
