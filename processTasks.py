@@ -459,7 +459,7 @@ if len(tasks) > 0:
                 # find matching compendium
                 type = None
                 for p in packs:
-                  if os.path.join(root,file).endswith(p["path"]):
+                  if os.path.join(root,file).endswith(p["path"]) and "type" in p:
                     type = p["type"]
 
                 with open(os.path.join(root,file), 'r') as f:
