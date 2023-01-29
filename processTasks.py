@@ -6,6 +6,7 @@ import logging
 import json
 import zipfile
 import shutil
+import subprocess
 import audioread
 from tinytag import TinyTag
 from time import time
@@ -344,10 +345,13 @@ if len(tasks) > 0:
         tmppath = os.path.join(TMP, "mtte")
         print("[ProcessTask] Processing '%s'" % blob)
 
-        # prepare
+        # prepare (clean any existing file)
         if os.path.isdir(tmppath):
-          os.system("rm -rf '%s'" % tmppath)
+          subprocess.run(["rm", "-rf", tmppath])
         os.mkdir(tmppath)
+        #if os.path.isdir(os.path.join(PREVIEW_FOLDER, container)):
+        #  subprocess.run(["rm", "-rf", os.path.join(PREVIEW_FOLDER, container)])
+        #os.mkdir(os.path.join(PREVIEW_FOLDER, container))
 
         # extract archive
         secs = time()
@@ -811,6 +815,16 @@ if len(tasks) > 0:
                 if file.lower().find("loop") > 0:
                   audioInfo[relPath]['loop'] = True
 
+                # Generate audio preview
+                if duration > 45:
+                  base, _ = os.path.splitext(relPath)
+                  previewPath = os.path.join(PREVIEW_FOLDER, container, dir, base + "_preview.ogg")
+                  if not os.path.isdir(os.path.dirname(previewPath)):
+                    os.makedirs(os.path.dirname(previewPath))
+                  command = ["ffmpeg", "-y", "-ss", "30", "-t", "15", "-i", audioFile, previewPath]
+                  subprocess.run(command)
+                  audioInfo[relPath]['preview'] = True
+
           if len(audioInfo.keys()) > 0:
             with open(os.path.join(packBasePath, "audioInfo.json"), "w") as out:
               json.dump(audioInfo, out)
@@ -822,6 +836,7 @@ if len(tasks) > 0:
           ###
           ### CLEANUP
           ###
+          
 
           # remove all thumbnails (to avoid them to appear in Foundry)
           for t in thumbsToDelete:
