@@ -79,6 +79,9 @@ if len(tasks) > 0:
       aws_access_key_id=S3_STORAGE_ACCOUNT,
       aws_secret_access_key=S3_STORAGE_ACCESS_KEY)
     try:
+      rootFolder = os.path.join(OUTPUT_FOLDER, task["container"])
+      if not os.path.isdir(rootFolder):
+        os.makedirs(rootFolder)
       filepath = os.path.join(OUTPUT_FOLDER, task["container"], task["packFile"])
       print("[ProcessTask] Downloading '%s/%s'" % (task["container"],task["packFile"]))
       clientS3.download_file("moulinette", os.path.join(task["container"],task["packFile"]), filepath)
