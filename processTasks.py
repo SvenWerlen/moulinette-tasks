@@ -7,12 +7,14 @@ import json
 import zipfile
 import shutil
 import subprocess
+import boto3
 import audioread
 from tinytag import TinyTag
 from time import time
 from urllib.parse import unquote
 from processTasksScenePacker import *
 from processTasksElastic import *
+from moulinette_utils.storage.s3 import MoulinetteStorageS3
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,33 @@ if len(tasks) > 0:
   
   log = ""
   
+  ############################################################################################################################
+  ################################## REPROCESS ###############################################################################
+  ############################################################################################################################
+  if task["type"] == "reprocess":
+    S3_STORAGE_ACCOUNT    = os.getenv('S3_STORAGE_ACCOUNT')     # S3 storage account
+    S3_STORAGE_ACCESS_KEY = os.getenv('S3_STORAGE_ACCESS_KEY')  # S3 storage access key
+
+    # Upload source file (and json)
+    # S3 Storage
+    session = boto3.session.Session()
+    clientS3 = session.client('s3',
+      region_name='nyc3', endpoint_url='https://nyc3.digitaloceanspaces.com',
+      aws_access_key_id=S3_STORAGE_ACCOUNT,
+      aws_secret_access_key=S3_STORAGE_ACCESS_KEY)
+    try:
+      filepath = os.path.join(OUTPUT_FOLDER, task["container"], task["packFile"])
+      print("[ProcessTask] Downloading '%s/%s'" % (task["container"],task["packFile"]))
+      clientS3.download_file("moulinette", os.path.join(task["container"],task["packFile"]), filepath)
+      print("[ProcessTask] File downloaded as : %s" % (filepath))
+      task["type"] = "extract"
+
+    except Exception as e:
+      logger.error("Cannot reprocess : %s" % (task))
+      logger.error(e)
+      task["status"] = "failed"
+    
+
   ############################################################################################################################
   ################################## TASK ELASTIC ############################################################################
   ############################################################################################################################
