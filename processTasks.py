@@ -577,23 +577,6 @@ if len(tasks) > 0:
             log += "No configuration file found!\n"
 
           ###
-          ### PRE PROCESSING #4 (maps based on specific extension : introduced for PogsProps)
-          ###
-          if cfg and "maps" in cfg and cfg["maps"].find("*") == 0:
-            for root, dirs, files in os.walk(os.path.join(tmppath, dir)):
-              for file in files:
-                if file.endswith(cfg["maps"][1:]):
-                  map = os.path.join(root, os.path.splitext(file)[0] + ".json")
-                  name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
-                  name = ' '.join(elem.capitalize() for elem in name.split())
-                  data = {
-                    "name": name,
-                    "navigation": False
-                  }
-                  with open(os.path.join(root, map), "w") as fw:
-                    fw.write(json.dumps(data, separators=(',', ':')))
-
-          ###
           ### IMAGE CONVERSION
           ### - converts all images to webp format
           ### - generates thumbnails
@@ -602,6 +585,61 @@ if len(tasks) > 0:
           os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
           print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
           log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
+
+          ###
+          ### PRE PROCESSING #4 (maps based on specific extension : introduced for PogsProps)
+          ###
+          if cfg and "maps" in cfg:
+            cfgMaps = cfg["maps"] if isinstance(cfg["maps"], list) else [cfg["maps"]]
+            for c in cfgMaps:
+              ## all files matching some specific pattern (ex: *.jpg)
+              if c.find("*") == 0 and len(c) > 1:
+                for root, dirs, files in os.walk(os.path.join(tmppath, dir)):
+                  for file in files:
+                    if file.endswith(c[1:]):
+                      map = os.path.join(root, os.path.splitext(file)[0] + ".json")
+                      name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
+                      name = ' '.join(elem.capitalize() for elem in name.split())
+                      height = None
+                      width = None
+                      try:
+                        height = int(subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=height", "-of", "csv=p=0:s=x", os.path.join(root, file)]))
+                        width = int(subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width", "-of", "csv=p=0:s=x", os.path.join(root, file)]))
+                      except:
+                        pass
+                      
+                      data = {
+                        "name": name,
+                        "navigation": False,
+                        "height": height,
+                        "width": width
+                      }
+                      with open(os.path.join(root, map), "w") as fw:
+                        fw.write(json.dumps(data, separators=(',', ':')))
+              ## all files in a specific folder (ex: maps/)
+              else:
+                for root, dirs, files in os.walk(os.path.join(tmppath, dir, c)):
+                  for file in files:
+                    if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
+                      map = os.path.join(root, os.path.splitext(file)[0] + ".json")
+                      name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
+                      name = ' '.join(elem.capitalize() for elem in name.split())
+                      height = None
+                      width = None
+                      try:
+                        height = int(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=height", "-of", "csv=p=0:s=x", os.path.join(root, file)]))
+                        width = int(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width", "-of", "csv=p=0:s=x", os.path.join(root, file)]))
+                      except:
+                        pass
+                      
+                      data = {
+                        "name": name,
+                        "navigation": False,
+                        "height": height,
+                        "width": width
+                      }
+                      with open(os.path.join(root, map), "w") as fw:
+                        fw.write(json.dumps(data, separators=(',', ':')))
 
           ###
           ### AUDIO CONVERSION
@@ -618,23 +656,6 @@ if len(tasks) > 0:
 
           print("[ProcessTask] Conversion from aac to ogg in %.1f seconds" % (time() - secs))
           log += "Conversion from aac to ogg in %.1f seconds\n" % (time() - secs)
-
-          ###
-          ### GENERATE MAPS FROM IMAGE or VIDEO
-          ###
-          if cfg and "maps" in cfg and cfg["maps"].find("*") < 0:
-            for root, dirs, files in os.walk(os.path.join(tmppath, dir, cfg["maps"])):
-              for file in files:
-                if file.endswith(".webm") or file.endswith(".mp4") or file.endswith(".webp"):
-                  map = os.path.join(root, os.path.splitext(file)[0] + ".json")
-                  name = (os.path.splitext(os.path.basename(filepath))[0]).replace("-"," ")
-                  name = ' '.join(elem.capitalize() for elem in name.split())
-                  data = {
-                    "name": name,
-                    "navigation": False
-                  }
-                  with open(os.path.join(root, map), "w") as fw:
-                    fw.write(json.dumps(data, separators=(',', ':')))
 
           # POST PROCESSING
           thumbsToDelete = []
