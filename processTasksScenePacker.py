@@ -35,6 +35,7 @@
 ### ######################################################################
 
 import os
+import json
 import logging
 
 from libs.jsonUtils import fileToJson, jsonToFile, dbToJson
@@ -100,14 +101,22 @@ def processScenePacker(tmppath, dir, container):
       destPath = os.path.join(tmppath, dir, "mtte", os.path.splitext(thumbFilename)[0] + "_thumb.webp")
 
       # use background as scene preview
-      if sc["id"] in scenesDB and "img" in scenesDB[sc["id"]]:
+      if sc["id"] in scenesDB and ("img" in scenesDB[sc["id"]] or "background" in scenesDB[sc["id"]]):
         scene = scenesDB[sc["id"]]
-        backgroundPath = os.path.join(tmppath, dir, "data", "assets", scenesDB[sc["id"]]["img"])
-        if os.path.isfile(backgroundPath):
-          logger.info("Generating thumbnail for scene: %s (%s)" % (scene["name"], sc["id"]))
-          generateThumnail(backgroundPath, destPath, 400, True)
-
-      # fallback
+        scenePath = scene["background"]["src"] if "background" in scene else scene["img"]
+        # BeneosBattlemaps : try to search a matching tile
+        if not scenePath and "tiles" in scene:
+          for t in scenesDB[sc["id"]]["tiles"]:
+            if "texture" in t and "src" in t["texture"] and t["texture"]["src"].startswith("beneos_battlemaps_assets") and t["texture"]["src"].endswith(".webm"):
+              scenePath = t["texture"]["src"]
+              
+        if scenePath:
+          backgroundPath = os.path.join(tmppath, dir, "data", "assets", scenePath)  
+          if os.path.isfile(backgroundPath):
+            logger.info("Generating thumbnail for scene: %s (%s)" % (scene["name"], sc["id"]))
+            generateThumnail(backgroundPath, destPath, 400, False)
+      
+      # fallback #2
       if not os.path.isfile(destPath):
         logger.warn("Converting fallback thumbnail for scene: %s" % (sc["id"]))
         convertImage(srcThumb, destPath)
