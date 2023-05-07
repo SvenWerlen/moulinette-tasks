@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import plyvel
 import requests
 import logging
 import json
@@ -460,7 +461,7 @@ if len(tasks) > 0:
 
           ###
           ### PRE PROCESSING #1.b
-          ### - extract information from any existing module
+          ### - extract information from any existing world
           ###
           fvttWorldPath = os.path.join(tmppath, dir, "world.json")
 
@@ -488,69 +489,86 @@ if len(tasks) > 0:
           ### PRE PROCESSING #2
           ### - extracts all entries from compendiums (if type supported)
           ###
-          for root, dirs, files in os.walk(tmppath):
-            for file in files:
-              if file.endswith(".db"):
+          entries = []
+          for p in packs:
+            # ignore non-supported packs
+            if not "type" in p and not "entity" in p:
+              continue
+            type = p["type"] if "type" in p else p["entity"]
+            if not type in ["Adventure", "Scene", "Actor"]:
+              continue
 
-                # find matching compendium
-                type = None
-                for p in packs:
-                  if os.path.join(root,file).endswith(p["path"]) and "type" in p:
-                    type = p["type"]
-
-                with open(os.path.join(root,file), 'r') as f:
+            # pack is in NeDB format
+            if "path" in p and p["path"].endswith(".db"):
+              packPath = os.path.join(tmppath, dir) + p["path"]
+              if os.path.isfile(packPath):
+                with open(packPath, 'r') as f:
                   for line in f:
-                    data = json.loads(line)
-                    if "name" in data:
-                      filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
-                      folder = None
+                    entry = json.loads(line)
+                    if "name" in entry:
+                      entries.append(entry)
+              else:
+                print(f"Skipping {p['path']} which doesn't exist")
+                
+            # pack is in LevelDB format
+            else:
+              db = plyvel.DB(os.path.join(tmppath, dir, p["path"]), create_if_missing=False)
+              for key, value in db:
+                entry = json.loads(value)
+                if "name" in entry:
+                  entries.append(entry)
+              db.close()
 
-                      # special case (dummy scene)
-                      if data["name"] == "#[CF_tempEntity]":
-                        print("Skipping scene with name %s" % data["name"])
-                        continue;
+          for data in entries:
+            filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
+            folder = None
 
-                      # support for Adventures
-                      # - explode elements in individual files
-                      if type == "Adventure":
-                        hasContent = False
-                        advPath = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
-                        if "scenes" in data and len(data["scenes"]) > 0:
-                          folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "scenes")
-                          os.system("mkdir -p '%s'" % folder)
-                          # extract scenes
-                          for sc in data["scenes"]:
-                            filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
-                            with open(os.path.join(folder, filename + ".json"), 'w') as out:
-                              json.dump(sc, out)
-                          hasContent = True
-                        if "actors" in data and len(data["actors"]) > 0:
-                          folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "actors")
-                          os.system("mkdir -p '%s'" % folder)
-                          # extract actors
-                          for sc in data["actors"]:
-                            filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
-                            with open(os.path.join(folder, filename + ".json"), 'w') as out:
-                              json.dump(sc, out)
-                          hasContent = True
+            # special case (dummy scene)
+            if data["name"] == "#[CF_tempEntity]":
+              print("Skipping scene with name %s" % data["name"])
+              continue;
 
-                        # store adventure information
-                        adventure = { "name": data["name"], "img": data["img"], "caption": data["caption"], "description": data["description"], "stats": data["_stats"] }
-                        with open(os.path.join(tmppath, dir, "json", "adventures", advPath, "adventure.json"), 'w') as out:
-                          json.dump(adventure, out)
-                        continue
+            # support for Adventures
+            # - explode elements in individual files
+            if type == "Adventure":
+              hasContent = False
+              advPath = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
+              if "scenes" in data and len(data["scenes"]) > 0:
+                folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "scenes")
+                os.system("mkdir -p '%s'" % folder)
+                # extract scenes
+                for sc in data["scenes"]:
+                  filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
+                  with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                    json.dump(sc, out)
+                hasContent = True
+              if "actors" in data and len(data["actors"]) > 0:
+                folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "actors")
+                os.system("mkdir -p '%s'" % folder)
+                # extract actors
+                for sc in data["actors"]:
+                  filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
+                  with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                    json.dump(sc, out)
+                hasContent = True
 
-                      # actors => prefab
-                      elif "type" in data and data["type"] == "npc":
-                        folder = os.path.join(tmppath, dir, "json", "prefabs")
-                      # navigation => scene
-                      elif "navigation" in data:
-                        folder = os.path.join(tmppath, dir, "json", "maps")
+              # store adventure information
+              adventure = { "name": data["name"], "img": data["img"], "caption": data["caption"], "description": data["description"], "stats": data["_stats"] }
+              with open(os.path.join(tmppath, dir, "json", "adventures", advPath, "adventure.json"), 'w') as out:
+                json.dump(adventure, out)
+              continue
 
-                      if folder:
-                        os.system("mkdir -p '%s'" % folder)
-                        with open(os.path.join(folder, filename + ".json"), 'w') as out:
-                          json.dump(data, out)
+            # actors => prefab
+            elif "type" in data and data["type"] == "npc":
+              folder = os.path.join(tmppath, dir, "json", "prefabs")
+            # navigation => scene
+            elif "navigation" in data:
+              folder = os.path.join(tmppath, dir, "json", "maps")
+
+            if folder:
+              os.system("mkdir -p '%s'" % folder)
+              with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                json.dump(data, out)
 
           ###
           ### PRE PROCESSING #3 (special for Baileywiki)
