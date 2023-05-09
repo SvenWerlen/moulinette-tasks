@@ -40,6 +40,7 @@ import logging
 
 from libs.jsonUtils import fileToJson, jsonToFile, dbToJson
 from libs.mediaUtils import convertImage, generateThumnail, generateWatermark
+from urllib.parse import unquote
 
 logger = logging.getLogger(__name__)
 
@@ -103,13 +104,13 @@ def processScenePacker(tmppath, dir, container):
       # use background as scene preview
       if sc["id"] in scenesDB and ("img" in scenesDB[sc["id"]] or "background" in scenesDB[sc["id"]]):
         scene = scenesDB[sc["id"]]
-        scenePath = scene["background"]["src"] if "background" in scene else scene["img"]
+        scenePath = unquote(scene["background"]["src"] if "background" in scene else scene["img"]) # unquote in case URL are encoded
         # BeneosBattlemaps : try to search a matching tile
         if not scenePath and "tiles" in scene:
           for t in scenesDB[sc["id"]]["tiles"]:
             if "texture" in t and "src" in t["texture"] and t["texture"]["src"].startswith("beneos_battlemaps_assets") and t["texture"]["src"].endswith(".webm"):
               scenePath = t["texture"]["src"]
-              
+
         if scenePath:
           backgroundPath = os.path.join(tmppath, dir, "data", "assets", scenePath)  
           if os.path.isfile(backgroundPath):
@@ -118,7 +119,7 @@ def processScenePacker(tmppath, dir, container):
       
       # fallback #2
       if not os.path.isfile(destPath):
-        logger.warn("Converting fallback thumbnail for scene: %s" % (sc["id"]))
+        logger.warn(f'Converting fallback thumbnail for scene: {sc["id"]}')
         convertImage(srcThumb, destPath)
 
       # generate watermarked versions
