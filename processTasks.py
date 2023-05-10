@@ -497,10 +497,12 @@ if len(tasks) > 0:
             type = p["type"] if "type" in p else p["entity"]
             if not type in ["Adventure", "Scene", "Actor"]:
               continue
-
+            
             # pack is in NeDB format
             if "path" in p and p["path"].endswith(".db"):
-              packPath = os.path.join(tmppath, dir) + p["path"]
+              packPath = os.path.join(tmppath, dir) + p["path"]  # some modules have path = /packs/...
+              if not os.path.isfile(packPath):
+                packPath = os.path.join(tmppath, dir, p["path"]) # some other modules have path = ./packs/...
               if os.path.isfile(packPath):
                 with open(packPath, 'r') as f:
                   for line in f:
