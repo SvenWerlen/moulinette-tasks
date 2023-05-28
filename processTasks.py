@@ -404,11 +404,23 @@ if len(tasks) > 0:
         ###
         ### PRE CLEANUP
         ### - remove all __MACOSX folders
+        ### - rename all extensions to lowercase
+        ### - remove all hidden/secret files
         ### - remove all files larger than 20 MB
         ###
         os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+
+        for root, dirs, files in os.walk(tmppath):
+          for file in files:
+            oldPath = os.path.join(root, file)
+            path, ext = os.path.splitext(oldPath)
+            newPath = path + ext.lower()
+            if oldPath != newPath:
+              os.rename(oldPath, newPath)
+
         os.system("find '%s' -type f -name '.*' -exec rm -f {} \;" % tmppath)
         os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -rf {} \;" % tmppath)
+
 
         ###
         ### SCENE PACKER
@@ -561,7 +573,7 @@ if len(tasks) > 0:
               continue
 
             # actors => prefab
-            elif "type" in data and data["type"] == "npc":
+            elif "type" in data and data["type"] in ["character", "npc"]:
               folder = os.path.join(tmppath, dir, "json", "prefabs")
             # navigation => scene
             elif "navigation" in data:
@@ -757,7 +769,7 @@ if len(tasks) > 0:
                   elif "background" in data and "src" in data["background"]:
                     backgroundImage = data["background"]["src"]
 
-                  if "type" in data and data["type"] == "npc":
+                  if "type" in data and data["type"] in ["character","npc"]:
                     # nothing more to do
                     print("- Prefab %s ... " % file)
                     log += "- Prefab %s ...\n" % file
