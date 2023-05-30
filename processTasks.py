@@ -530,6 +530,16 @@ if len(tasks) > 0:
               for key, value in db:
                 entry = json.loads(value)
                 if "name" in entry:
+                  # iterate on all props (walls, lights, etc.)
+                  # replaces all references with complete value
+                  for k, v in entry.items():
+                    if isinstance(v, list):
+                      newList = []
+                      for id in v:
+                        newKey = f'!scenes.{k}!{entry["_id"]}.{id}'
+                        newVal = db.get(newKey.encode('utf-8'))
+                        newList.append(json.loads(newVal))
+                      entry[k] = newList
                   entries.append(entry)
               db.close()
 
