@@ -190,7 +190,7 @@ if len(tasks) > 0:
                 # generate thumbnail
                 imgPath = os.path.join(root, file)
                 thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
-                os.system('convert "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (imgPath, thumbPath))
+                os.system('convert -quiet "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (imgPath, thumbPath))
 
                 with open(os.path.join(root, map), "w") as fw:
                   fw.write(json.dumps(data, separators=(',', ':')))
@@ -295,7 +295,7 @@ if len(tasks) > 0:
               thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
               if not os.path.isfile(thumbPath):
                 imagePath = os.path.join(root, file)
-                os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
+                os.system('convert -quiet "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
                 if os.path.isfile(thumbPath):
                   print("[ProcessTask] - Thumbnail generated for %s" % file)
                   log += "- Thumbnail generated for %s\n" % file
@@ -604,7 +604,7 @@ if len(tasks) > 0:
                 source = os.path.join(root, file)
                 # generate thumbnail
                 target = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
-                os.system('convert "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (source, target))
+                os.system('convert -quiet "%s" -resize 400x400^ -gravity center -extent 400x400 "%s"' % (source, target))
                 # generate original source
                 target = os.path.join(root, os.path.splitext(file)[0] + "_thumb_orig.webp")
                 os.rename(source, target)
@@ -843,7 +843,7 @@ if len(tasks) > 0:
                         # generate thumbnail
                         thumbPath = os.path.splitext(image)[0] + "_thumb.webp"
                         if not os.path.isfile(thumbPath):
-                          os.system('convert "%s" -thumbnail 400x400^ -gravity center -extent 400x400 "%s"' % (image, thumbPath))
+                          os.system('convert -quiet "%s" -thumbnail 400x400^ -gravity center -extent 400x400 "%s"' % (image, thumbPath))
 
                       if "thumb" in data:
                         del data['thumb']
@@ -868,7 +868,7 @@ if len(tasks) > 0:
                 thumbPath = os.path.join(root, os.path.splitext(file)[0] + "_thumb.webp")
                 if not os.path.isfile(thumbPath):
                   imagePath = os.path.join(root, file)
-                  os.system('convert "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
+                  os.system('convert -quiet "%s" -resize 100x100 "%s"' % (imagePath, thumbPath))
                   if os.path.isfile(thumbPath):
                     print("[ProcessTask] - Thumbnail generated for %s" % file)
                     log += "- Thumbnail generated for %s\n" % file
@@ -916,7 +916,7 @@ if len(tasks) > 0:
                   previewPath = os.path.join(PREVIEW_FOLDER, container, dir, base + "_preview.ogg")
                   if not os.path.isdir(os.path.dirname(previewPath)):
                     os.makedirs(os.path.dirname(previewPath))
-                  command = ["ffmpeg", "-y", "-ss", "30", "-t", "15", "-i", audioFile, previewPath]
+                  command = ["ffmpeg", "-loglevel", "quiet", "-y", "-ss", "30", "-t", "15", "-i", audioFile, previewPath]
                   subprocess.run(command)
                   audioInfo[relPath]['preview'] = True
 
@@ -924,9 +924,9 @@ if len(tasks) > 0:
             with open(os.path.join(packBasePath, "audioInfo.json"), "w") as out:
               json.dump(audioInfo, out)
 
-          if DEBUG:
-            print("Stopping before CLEANUP")
-            exit(1)
+          #if DEBUG:
+          #  print("Stopping before CLEANUP")
+          #  exit(1)
 
           ###
           ### CLEANUP
@@ -953,11 +953,17 @@ if len(tasks) > 0:
                 baseDir = os.path.join(TMP, "mtte")
                 basePath = os.path.join(root, file)[len(baseDir)+1:]
                 basePath = os.path.splitext(basePath)[0]
-                wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp")
+                wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp") # thumbnail
+                wmPath2 = os.path.join(PREVIEW_FOLDER, container, basePath + "_pv.webp")   # preview
                 if not os.path.isdir(os.path.dirname(wmPath)):
                   os.makedirs(os.path.dirname(wmPath))
-                os.system('convert -thumbnail 100x100 -background none -gravity center "%s" -extent 100x100 /tmp/img.webp' % (os.path.join(root,file)))
+                os.system('convert -quiet -thumbnail 100x100 -background none -gravity center "%s" -extent 100x100 /tmp/img.webp' % (os.path.join(root,file)))
                 os.system('composite watermark.png /tmp/img.webp -gravity Center "%s"' % (wmPath))
+                os.system('convert -quiet -thumbnail 400x400 -background none -gravity center "%s" -extent 400x400 /tmp/img.webp' % (os.path.join(root,file)))
+                os.system('composite watermark2.png /tmp/img.webp -gravity Center "%s"' % (wmPath2))
+                print("[ProcessTask] - Watermarked image generated for %s" % file)
+                log += "- Watermarked image generated for %s\n" % file
+
 
           # maps
           for root, dirs, files in os.walk(tmppath):
@@ -968,11 +974,16 @@ if len(tasks) > 0:
                   baseDir = os.path.join(TMP, "mtte")
                   basePath = os.path.join(root, imgPath)[len(baseDir)+1:]
                   basePath = os.path.splitext(basePath)[0]
-                  wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp")
+                  wmPath = os.path.join(PREVIEW_FOLDER, container, basePath + "_thumb.webp") # thumbnail
+                  wmPath2 = os.path.join(PREVIEW_FOLDER, container, basePath + "_pv.webp")   # preview
                   if not os.path.isdir(os.path.dirname(wmPath)):
                     os.makedirs(os.path.dirname(wmPath))
-                  os.system('convert -thumbnail 400x400 -background none -gravity center "%s" -extent 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
+                  os.system('convert -quiet -thumbnail 400x400^ -background none -gravity center "%s" -extent 400x400 /tmp/img.webp' % (os.path.join(root,imgPath)))
                   os.system('composite watermark-map.png /tmp/img.webp -gravity Center "%s"' % (wmPath))
+                  os.system('convert -quiet -thumbnail 800x800 -background none -gravity center "%s" /tmp/img.webp' % (os.path.join(root,imgPath)))
+                  os.system('composite watermark-map2.png /tmp/img.webp -gravity northeast "%s"' % (wmPath2))
+                  print("[ProcessTask] - Watermarked image generated for map %s" % file)
+                  log += "- Watermarked image generated for map %s\n" % file
 
           # chg permissions
           os.system('chmod 775 -R %s' % (os.path.join(PREVIEW_FOLDER, container)))
@@ -999,6 +1010,10 @@ if len(tasks) > 0:
             os.system("grep 'modules/[^/\"]*/[^\"]*' %s -ohr | sort | uniq >> '%s'" % (tmppath, logPath))
 
         ### -------------------------------------------
+
+        if DEBUG:
+          print("Stopping because of DEBUG")
+          exit(1)
 
         # clear existing blobs (if any)
         secs = time()
