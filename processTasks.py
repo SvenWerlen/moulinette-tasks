@@ -760,6 +760,10 @@ if len(tasks) > 0:
                   # if depPath defined => replace all paths with #DEP#
                   if cfg and "depPath" in cfg:
                     content = content.replace("\"%s/" % cfg["depPath"], "\"#DEP#")
+                    # FIX : some paths are configured /modules/... rather than modules/...
+                    if cfg["depPath"].startswith("modules/"):
+                      content = content.replace("\"/%s/" % cfg["depPath"], "\"#DEP#")
+
                     if "external" in cfg:
                       for idx, dep in enumerate(cfg["external"]):
                         content = content.replace("\"%s/" % dep["src"], "\"#DEP%d#" % idx)
