@@ -104,7 +104,8 @@ def processScenePacker(tmppath, dir, container):
       # use background as scene preview
       if sc["id"] in scenesDB and ("img" in scenesDB[sc["id"]] or "background" in scenesDB[sc["id"]]):
         scene = scenesDB[sc["id"]]
-        scenePath = unquote(scene["background"]["src"] if "background" in scene else scene["img"]) # unquote in case URL are encoded
+        backgroundUrl = scene["background"]["src"] if "background" in scene else scene["img"]
+        scenePath = unquote(backgroundUrl) if backgroundUrl else None # unquote in case URL are encoded
         # BeneosBattlemaps : try to search a matching tile
         if not scenePath and "tiles" in scene:
           for t in scenesDB[sc["id"]]["tiles"]:

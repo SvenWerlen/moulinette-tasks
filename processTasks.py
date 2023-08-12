@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import boto3
 import audioread
+import traceback
 from tinytag import TinyTag
 from time import time
 from urllib.parse import unquote
@@ -1042,7 +1043,7 @@ if len(tasks) > 0:
     # Exception handling
     except Exception as e:
       print("[ProcessTask] Exception during processing")
-      print(e)
+      traceback.print_exception(type(e), e, e.__traceback__)
       task["status"] = "failed"
 
 # write statuses
