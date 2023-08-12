@@ -109,7 +109,7 @@ def processScenePacker(tmppath, dir, container):
         # BeneosBattlemaps : try to search a matching tile
         if not scenePath and "tiles" in scene:
           for t in scenesDB[sc["id"]]["tiles"]:
-            if "texture" in t and "src" in t["texture"] and t["texture"]["src"].startswith("beneos_battlemaps_assets") and t["texture"]["src"].endswith(".webm"):
+            if "texture" in t and "src" in t["texture"] and t["texture"]["src"] and t["texture"]["src"].startswith("beneos_battlemaps_assets") and t["texture"]["src"].endswith(".webm"):
               scenePath = t["texture"]["src"]
 
         if scenePath:
