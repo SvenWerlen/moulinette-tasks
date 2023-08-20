@@ -92,7 +92,7 @@ def processScenePacker(tmppath, dir, container):
     for sc in scenes:
 
       if not sc["thumb"]:
-        return logger.warning("Skipping scene because thumb is None %s" % sc)
+        logger.warning("Skipping scene because thumb is None %s" % sc)
         continue;
 
       srcThumb = os.path.join(tmppath, dir, "data", sc["thumb"])
