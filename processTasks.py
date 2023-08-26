@@ -539,7 +539,9 @@ if len(tasks) > 0:
                       for id in v:
                         newKey = f'!scenes.{k}!{entry["_id"]}.{id}'
                         newVal = db.get(newKey.encode('utf-8'))
-                        newList.append(json.loads(newVal))
+                        # make sure the value was found in the database
+                        if newVal:
+                          newList.append(json.loads(newVal))
                       entry[k] = newList
                   entries.append(entry)
               db.close()
