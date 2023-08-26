@@ -545,6 +545,11 @@ if len(tasks) > 0:
               db.close()
 
           for data in entries:
+            # fix special case
+            if not data["name"]:
+              print("Skipping scene with no name")
+              continue;
+            
             filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
             folder = None
 
