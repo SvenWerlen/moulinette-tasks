@@ -810,7 +810,7 @@ if len(tasks) > 0:
                           image = imagePath
                         elif os.path.isfile(imagePath):
                           srcExt = os.path.splitext(imagePath)[1]
-                          # special case for animated maps. Also copy the webm/mp4 file (WHY??? => disabling)
+                          # special case for animated maps. Also copy the webm/mp4 file (WHY??? => because background was used to be replaced. See #REF001.)
                           if srcExt in [".webm", ".mp4"]:
                             #shutil.copyfile(imagePath, os.path.join(root, os.path.splitext(file)[0] + srcExt))
                             shutil.copyfile(os.path.splitext(imagePath)[0] + ".webp", image)
@@ -843,8 +843,8 @@ if len(tasks) > 0:
                         imgPath = os.path.splitext(imgPath)[0] + ".webm"
 
                       if not imgExternal:
-                        # replace img path (except for WebM (video))
-                        if not backgroundImage or not backgroundImage.endswith("webm"):
+                        # REF001 : replace img path (except for WebM/MP4 (video))
+                        if not backgroundImage or (not backgroundImage.endswith("webm") and not backgroundImage.endswith("mp4")):
                           # V10
                           if "background" in data and "src" in data["background"]:
                             data["background"]["src"] = "#DEP#%s" % imgPath
