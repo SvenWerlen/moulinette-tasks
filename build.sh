@@ -6,20 +6,20 @@ DEBUG=$1
 JSON=/tmp/moulinette-tasks.json
 LOCK=/tmp/moulinette-tasks.lock
 
-# check if process already running
-if [ -f "$LOCK" ]; then
-  python3 ./checkLock.py $LOCK
-  exit 1
-fi
-
-# add lock
-if [ ! "$DEBUG" = "true" ]; then
-  touch $LOCK
-fi
-
 CONTINUE=true
 while $CONTINUE
 do
+    # check if process already running
+    if [ -f "$LOCK" ]; then
+      python3 ./checkLock.py $LOCK
+      exit 1
+    fi
+
+    # add lock
+    if [ ! "$DEBUG" = "true" ]; then
+      touch $LOCK
+    fi
+
     OK=true
 
     if [ "$OK" = true ]; then python3 ./retrieveTasks.py || OK=false; fi
@@ -30,8 +30,10 @@ do
       exit 1
     fi
 
+    if [ "$OK" = true ]; then python3 ./updateMongoDB.py || OK=false; fi
+    #exit 1
     if [ "$OK" = true ]; then python3 ./uploadBlobs.py || OK=false; fi
-
+    
     python3 ./completeTasks.py $OK
     python3 ./notifyDiscord.py $OK
 
@@ -41,7 +43,7 @@ do
     if [ ${#list} -eq 2 ]; then
       CONTINUE=false
     fi
-done
 
-# remove lock
-rm -f $LOCK
+    # remove lock
+    rm -f $LOCK
+done

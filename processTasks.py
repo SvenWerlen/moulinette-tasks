@@ -379,6 +379,9 @@ if len(tasks) > 0:
         tmppath = os.path.join(TMP, "mtte")
         print("[ProcessTask] Processing '%s'" % blob)
 
+        # extracted assets (for Mongo database)
+        assets = []
+
         # prepare (clean any existing file)
         if os.path.isdir(tmppath):
           subprocess.run(["rm", "-rf", tmppath])
@@ -501,15 +504,15 @@ if len(tasks) > 0:
           ###
           ### PRE PROCESSING #2
           ### - extracts all entries from compendiums (if type supported)
+          ### - save entries for upload on MongoDB instance
           ###
-          entries = []
           for p in packs:
-            # ignore non-supported packs
+            entries = []
+
+            # ignore invalid packs
             if not "type" in p and not "entity" in p:
               continue
             type = p["type"] if "type" in p else p["entity"]
-            if not type in ["Adventure", "Scene", "Actor"]:
-              continue
             
             # pack is in NeDB format
             if "path" in p and p["path"].endswith(".db"):
@@ -546,61 +549,80 @@ if len(tasks) > 0:
                   entries.append(entry)
               db.close()
 
-          for data in entries:
-            # fix special case
-            if not data["name"]:
-              print("Skipping scene with no name")
-              continue;
-            
-            filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
-            folder = None
+            for data in entries:
+              # fix special case
+              if not data["name"]:
+                print("Skipping entity with no name")
+                continue;
+              
+              filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
+              folder = None
 
-            # special case (dummy scene)
-            if data["name"] == "#[CF_tempEntity]":
-              print("Skipping scene with name %s" % data["name"])
-              continue;
+              # special case (dummy entity)
+              if data["name"] == "#[CF_tempEntity]":
+                print("Skipping scene with name %s" % data["name"])
+                continue;
+              
+              # Prepare entity for MongoDB
+              asset = {
+                'creatorId': container,
+                'packFile': blob,
+                'name': data["name"],
+                'type': type,
+                'compendium': p["label"],
+                'data': data
+              }
+              assets.append(asset)
 
-            # support for Adventures
-            # - explode elements in individual files
-            if type == "Adventure":
-              hasContent = False
-              advPath = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
-              if "scenes" in data and len(data["scenes"]) > 0:
-                folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "scenes")
+              # support for Adventures
+              # - explode elements in individual files
+              if type == "Adventure":
+                hasContent = False
+                advPath = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
+                if "scenes" in data and len(data["scenes"]) > 0:
+                  folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "scenes")
+                  os.system("mkdir -p '%s'" % folder)
+                  # extract scenes
+                  for sc in data["scenes"]:
+                    filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
+                    with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                      json.dump(sc, out)
+                  hasContent = True
+                if "actors" in data and len(data["actors"]) > 0:
+                  folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "actors")
+                  os.system("mkdir -p '%s'" % folder)
+                  # extract actors
+                  for sc in data["actors"]:
+                    filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
+                    with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                      json.dump(sc, out)
+                  hasContent = True
+
+                # store adventure information
+                adventure = { "name": data["name"], "img": data["img"], "caption": data["caption"], "description": data["description"], "stats": data["_stats"] }
+                with open(os.path.join(tmppath, dir, "json", "adventures", advPath, "adventure.json"), 'w') as out:
+                  json.dump(adventure, out)
+                continue
+
+              # Prefabs
+              if type == "Actor" and "type" in data and data["type"] in ["character", "npc"]:
+                folder = os.path.join(tmppath, dir, "json", "prefabs")
+              # Scenes
+              elif type == "Scene":
+                folder = os.path.join(tmppath, dir, "json", "maps")
+
+              if folder:
                 os.system("mkdir -p '%s'" % folder)
-                # extract scenes
-                for sc in data["scenes"]:
-                  filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
-                  with open(os.path.join(folder, filename + ".json"), 'w') as out:
-                    json.dump(sc, out)
-                hasContent = True
-              if "actors" in data and len(data["actors"]) > 0:
-                folder = os.path.join(tmppath, dir, "json", "adventures", advPath, "actors")
-                os.system("mkdir -p '%s'" % folder)
-                # extract actors
-                for sc in data["actors"]:
-                  filename = re.sub('[^0-9a-zA-Z]+', '-', sc["name"]).lower()
-                  with open(os.path.join(folder, filename + ".json"), 'w') as out:
-                    json.dump(sc, out)
-                hasContent = True
-
-              # store adventure information
-              adventure = { "name": data["name"], "img": data["img"], "caption": data["caption"], "description": data["description"], "stats": data["_stats"] }
-              with open(os.path.join(tmppath, dir, "json", "adventures", advPath, "adventure.json"), 'w') as out:
-                json.dump(adventure, out)
-              continue
-
-            # actors => prefab
-            elif "type" in data and data["type"] in ["character", "npc"]:
-              folder = os.path.join(tmppath, dir, "json", "prefabs")
-            # navigation => scene
-            elif "navigation" in data:
-              folder = os.path.join(tmppath, dir, "json", "maps")
-
-            if folder:
-              os.system("mkdir -p '%s'" % folder)
-              with open(os.path.join(folder, filename + ".json"), 'w') as out:
-                json.dump(data, out)
+                with open(os.path.join(folder, filename + ".json"), 'w') as out:
+                  json.dump(data, out)
+          
+          ###
+          ### PRE PROCESSING #2b
+          ### - store all extracted assets (for MongoDB)
+          ### - NOTE : by storing it as JSON, dependencies will automatically be replaced. See "MAPS PROCESSING (JSON)"
+          ###
+          with open(os.path.join(tmppath, dir, "json", "assets.json"), 'w') as out:
+            json.dump(assets, out)
 
           ###
           ### PRE PROCESSING #3 (special for Baileywiki)
