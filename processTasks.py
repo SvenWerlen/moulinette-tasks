@@ -434,7 +434,7 @@ if len(tasks) > 0:
 
           if DEBUG:
             print("Stopping before CLEANUP")
-            exit(1)
+            exit(0)
 
         ###
         ### REGULAR PACK
@@ -1025,7 +1025,7 @@ if len(tasks) > 0:
 
         if DEBUG:
           print("Stopping because of DEBUG")
-          exit(1)
+          exit(0)
 
         # clear existing blobs (if any)
         secs = time()

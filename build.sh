@@ -24,6 +24,7 @@ do
 
     if [ "$OK" = true ]; then python3 ./retrieveTasks.py || OK=false; fi
     if [ "$OK" = true ]; then python3 ./processTasks.py $DEBUG || OK=false; fi
+    if [ "$OK" = true ]; then python3 ./processMetadata.py $DEBUG || OK=false; fi
 
     if [ "$DEBUG" = "true" ]; then
       echo "Debug completed!"
