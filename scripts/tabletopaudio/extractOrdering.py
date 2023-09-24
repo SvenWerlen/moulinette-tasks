@@ -8,7 +8,7 @@ from fuzzywuzzy import fuzz
 MASTERLIST = "/home/sven/Téléchargements/test/Custom SoundPad - Tabletop Audio_files/custom_sp_master_freq_min.js"
 PATH = "/home/sven/Téléchargements/custom_sp.html"
 PACK = "/home/sven/Téléchargements/tabletopaudio-pad/"
-OUTPUT = "/home/sven/Téléchargements/tabletopaudio.json"
+OUTPUT = "/home/sven/Téléchargements/tabletopaudio-pad/metadata.json"
 FOLDERMAP = {
   'alien_starship': "Alien Starship",
   'ancient_greece': "Ancient Greece",
@@ -45,9 +45,9 @@ FOLDERMAP = {
 }
 
 CATEGMAP = {
-  'ev': "Events",
-  'bg': "Backgrounds",
-  'tn': "Tones",
+  'ev': "Event",
+  'bg': "B/G",
+  'tn': "Tone",
   'mu': "Music"
 }
 
@@ -82,7 +82,7 @@ def matchSound(folder, filename):
       break
   
   if not folderMatch:
-    logger.error(f'No folder matching {folder}!')
+    logger.error(f'No folder matching {folder} ({filename})!')
     exit(1)
   
   cleanMatch = clean(filename)
@@ -163,11 +163,12 @@ allSounds = {}
 logger.info("Fetching all sounds ...")
 for root, subfolders, files in os.walk(PACK):
   for file in files:
-    filePath = str(os.path.join(root, file))
-    subFolder = os.path.dirname(filePath)[len(PACK):]
-    if not subFolder in allSounds:
-      allSounds[subFolder] = []
-    allSounds[subFolder].append({ "path" : file })
+    if file.endswith(".ogg") or file.endswith(".mp3"):
+      filePath = str(os.path.join(root, file))
+      subFolder = os.path.dirname(filePath)[len(PACK):]
+      if not subFolder in allSounds:
+        allSounds[subFolder] = []
+      allSounds[subFolder].append({ "path" : file })
 
 
 ##
@@ -225,8 +226,9 @@ for folder, sounds in allSounds.items():
     
     sound['name'] = name
     sound['nameAlt'] = clean(sound['path']).title()
-    sound['categ'] = CATEGMAP[match[0]['category']]
+    sound['categ'] = [CATEGMAP[match[0]['category']]]
     sound['order'] = int(match[0]['id'])
+    sound['path'] = os.path.join(folder, sound['path'])
 
 out_file = open(OUTPUT, "w")
 json.dump(allSounds, out_file)
