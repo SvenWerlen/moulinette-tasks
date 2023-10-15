@@ -527,6 +527,10 @@ if len(tasks) > 0:
                 
             # pack is in LevelDB format
             else:
+              # remove first "/" (if any to avoid absolute paths)
+              if p["path"].startswith("/"):
+                p["path"] = p["path"][1:]
+
               db = plyvel.DB(os.path.join(tmppath, dir, p["path"]), create_if_missing=False)
               for key, value in db:
                 entry = json.loads(value)
