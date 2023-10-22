@@ -6,7 +6,7 @@ import os
 import logging
 from elastic_enterprise_search import AppSearch
 
-CREATOR_TO_DELETE = "Hyperdrive Fleet"
+CREATOR_TO_DELETE = "MikWewa Maps"
 
 #################
 
