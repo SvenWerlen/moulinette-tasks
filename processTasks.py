@@ -513,6 +513,7 @@ if len(tasks) > 0:
             if not "type" in p and not "entity" in p:
               continue
             type = p["type"] if "type" in p else p["entity"]
+            system = p["system"] if "system" in p else None
             
             # pack is in NeDB format
             if "path" in p and p["path"].endswith(".db"):
@@ -576,6 +577,8 @@ if len(tasks) > 0:
                 'compendium': p["label"],
                 'data': data
               }
+              if system:
+                asset["system"] = system
               assets.append(asset)
 
               # support for Adventures

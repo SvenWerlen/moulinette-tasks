@@ -61,7 +61,7 @@ if len(tasks) > 0:
       coll = db.assets
       
       # removing existing entries
-      unique = { 'creatorId': task["container"], 'packId': task["packFile"] }
+      unique = { 'creatorId': task["container"], 'packFile': task["packFile"] }
       result = coll.delete_many(unique)
       logger.info(f"{result.deleted_count} documents ont été supprimés avec succès (MongoDB).")
 
