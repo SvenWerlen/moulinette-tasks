@@ -628,6 +628,7 @@ if len(tasks) > 0:
           ### - store all extracted assets (for MongoDB)
           ### - NOTE : by storing it as JSON, dependencies will automatically be replaced. See "MAPS PROCESSING (JSON)"
           ###
+          os.system("mkdir -p '%s'" % os.path.join(tmppath, dir, "json"))
           with open(os.path.join(tmppath, dir, "json", "assets.json"), 'w') as out:
             json.dump(assets, out)
 

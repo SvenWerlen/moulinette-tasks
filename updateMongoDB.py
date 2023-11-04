@@ -52,18 +52,20 @@ if len(tasks) > 0:
 
     with open(assetsFile, "r") as f:
       assets = json.load(f)
+      if not assets or len(assets) == 0:
+        logger.info(f'No asset to be indexed for that pack')
+      else:
+        client = MongoClient(MONGODB_URI)
+        client.admin.command('ping')
+        db = client.moulinettedev if MONGODEV else client.moulinette
+        coll = db.assets
+        
+        # removing existing entries
+        unique = { 'creatorId': task["container"], 'packFile': task["packFile"] }
+        result = coll.delete_many(unique)
+        logger.info(f"{result.deleted_count} documents ont été supprimés avec succès (MongoDB).")
 
-      client = MongoClient(MONGODB_URI)
-      client.admin.command('ping')
-      db = client.moulinettedev if MONGODEV else client.moulinette
-      coll = db.assets
-      
-      # removing existing entries
-      unique = { 'creatorId': task["container"], 'packFile': task["packFile"] }
-      result = coll.delete_many(unique)
-      logger.info(f"{result.deleted_count} documents ont été supprimés avec succès (MongoDB).")
-
-      # upload to MongoDB
-      result = coll.insert_many(assets)
-      if result.inserted_ids:
-        logger.info(f"{len(result.inserted_ids)} documents insérés avec succès (MongoDB).")
+        # upload to MongoDB
+        result = coll.insert_many(assets)
+        if result.inserted_ids:
+          logger.info(f"{len(result.inserted_ids)} documents insérés avec succès (MongoDB).")
