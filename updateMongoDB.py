@@ -4,14 +4,12 @@
 import os
 import sys
 import json
-import shutil
 from pymongo import MongoClient
-import requests
 import logging
-import boto3
 
 # Get required environment variables
 OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER') # Output folder (where data is ready for upload)
+MONGODEV      = os.environ['MONGO_DEV'] == "1"
 MONGODB_URI   = f"mongodb+srv://{os.environ['MONGO_CREDS']}/?retryWrites=true&w=majority"
 
 # logging information
@@ -57,7 +55,7 @@ if len(tasks) > 0:
 
       client = MongoClient(MONGODB_URI)
       client.admin.command('ping')
-      db = client.moulinette
+      db = client.moulinettedev if MONGODEV else client.moulinette
       coll = db.assets
       
       # removing existing entries
