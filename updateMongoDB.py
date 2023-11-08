@@ -48,24 +48,24 @@ if len(tasks) > 0:
     assetsFile = os.path.join(OUTPUT_FOLDER, task["container"], packName, "json", "assets.json")
 
     if not os.path.isfile(assetsFile):
-      sys.exit(f'No {assetsFile} file found')
+      logger.info(f'No {assetsFile} file found')
+    else:
+      with open(assetsFile, "r") as f:
+        assets = json.load(f)
+        if not assets or len(assets) == 0:
+          logger.info(f'No asset to be indexed for that pack')
+        else:
+          client = MongoClient(MONGODB_URI)
+          client.admin.command('ping')
+          db = client.moulinettedev if MONGODEV else client.moulinette
+          coll = db.assets
+          
+          # removing existing entries
+          unique = { 'creatorId': task["container"], 'packFile': task["packFile"] }
+          result = coll.delete_many(unique)
+          logger.info(f"{result.deleted_count} documents ont été supprimés avec succès (MongoDB).")
 
-    with open(assetsFile, "r") as f:
-      assets = json.load(f)
-      if not assets or len(assets) == 0:
-        logger.info(f'No asset to be indexed for that pack')
-      else:
-        client = MongoClient(MONGODB_URI)
-        client.admin.command('ping')
-        db = client.moulinettedev if MONGODEV else client.moulinette
-        coll = db.assets
-        
-        # removing existing entries
-        unique = { 'creatorId': task["container"], 'packFile': task["packFile"] }
-        result = coll.delete_many(unique)
-        logger.info(f"{result.deleted_count} documents ont été supprimés avec succès (MongoDB).")
-
-        # upload to MongoDB
-        result = coll.insert_many(assets)
-        if result.inserted_ids:
-          logger.info(f"{len(result.inserted_ids)} documents insérés avec succès (MongoDB).")
+          # upload to MongoDB
+          result = coll.insert_many(assets)
+          if result.inserted_ids:
+            logger.info(f"{len(result.inserted_ids)} documents insérés avec succès (MongoDB).")
