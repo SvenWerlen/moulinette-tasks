@@ -606,6 +606,9 @@ if len(tasks) > 0:
                   hasContent = True
 
                 # store adventure information
+                folder = os.path.join(tmppath, dir, "json", "adventures", advPath)
+                os.system("mkdir -p '%s'" % folder)
+                
                 adventure = { "name": data["name"], "img": data["img"], "caption": data["caption"], "description": data["description"], "stats": data["_stats"] }
                 with open(os.path.join(tmppath, dir, "json", "adventures", advPath, "adventure.json"), 'w') as out:
                   json.dump(adventure, out)
