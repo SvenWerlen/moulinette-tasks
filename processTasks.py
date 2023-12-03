@@ -535,24 +535,27 @@ if len(tasks) > 0:
               if p["path"].startswith("/"):
                 p["path"] = p["path"][1:]
 
-              db = plyvel.DB(os.path.join(tmppath, dir, p["path"]), create_if_missing=False)
-              for key, value in db:
-                entry = json.loads(value)
-                if "name" in entry:
-                  # iterate on all props (walls, lights, etc.)
-                  # replaces all references with complete value
-                  for k, v in entry.items():
-                    if isinstance(v, list):
-                      newList = []
-                      for id in v:
-                        newKey = f'!scenes.{k}!{entry["_id"]}.{id}'
-                        newVal = db.get(newKey.encode('utf-8'))
-                        # make sure the value was found in the database
-                        if newVal:
-                          newList.append(json.loads(newVal))
-                      entry[k] = newList
-                  entries.append(entry)
-              db.close()
+              try:
+                db = plyvel.DB(os.path.join(tmppath, dir, p["path"]), create_if_missing=False)
+                for key, value in db:
+                  entry = json.loads(value)
+                  if "name" in entry:
+                    # iterate on all props (walls, lights, etc.)
+                    # replaces all references with complete value
+                    for k, v in entry.items():
+                      if isinstance(v, list):
+                        newList = []
+                        for id in v:
+                          newKey = f'!scenes.{k}!{entry["_id"]}.{id}'
+                          newVal = db.get(newKey.encode('utf-8'))
+                          # make sure the value was found in the database
+                          if newVal:
+                            newList.append(json.loads(newVal))
+                        entry[k] = newList
+                    entries.append(entry)
+                db.close()
+              except Exception as e:
+                print("Couldn't read DB", e)
 
             for data in entries:
               # fix special case
