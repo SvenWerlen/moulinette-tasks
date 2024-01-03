@@ -546,12 +546,14 @@ if len(tasks) > 0:
                       if isinstance(v, list):
                         newList = []
                         for id in v:
-                          newKey = f'!scenes.{k}!{entry["_id"]}.{id}'
-                          newVal = db.get(newKey.encode('utf-8'))
-                          # make sure the value was found in the database
-                          if newVal:
-                            newList.append(json.loads(newVal))
-                        entry[k] = newList
+                          if isinstance(id, str):
+                            newKey = f'!scenes.{k}!{entry["_id"]}.{id}'
+                            newVal = db.get(newKey.encode('utf-8'))
+                            # make sure the value was found in the database
+                            if newVal:
+                              newList.append(json.loads(newVal))
+                        if len(newList) > 0:
+                          entry[k] = newList
                     entries.append(entry)
                 db.close()
               except Exception as e:
@@ -561,7 +563,7 @@ if len(tasks) > 0:
               # fix special case
               if not data["name"]:
                 print("Skipping entity with no name")
-                continue;
+                continue
               
               filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
               folder = None
