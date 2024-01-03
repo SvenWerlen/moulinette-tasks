@@ -816,8 +816,9 @@ if len(tasks) > 0:
                       for idx, dep in enumerate(cfg["external"]):
                         content = content.replace("\"%s/" % dep["src"], "\"#DEP%d#" % idx)
 
-                    # make sure that all assets are in webm format
-                    content = re.sub(r'"(#DEP[^"]*).(?:png|jpg)"', '"\g<1>.webp"', content)
+                    # REPLACE all images paths from PNG/JPG to WebP
+                    # make sure that all assets are in webp format
+                    content = re.sub(r'"(#DEP[^"]*).(?:png|jpg)', '"\g<1>.webp', content)
 
                     with open(os.path.join(root, file), "w") as fw:
                       fw.write(content)
