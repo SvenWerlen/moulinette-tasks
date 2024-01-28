@@ -4,9 +4,6 @@
 ###
 ###                         SCAN GIT
 ###
-###  
-### insert packs(vanity, packFile, packFileSize, packTotalSize, packAssetsCount, baseUrl, token) values('moulinette', 'SvenWerlen-moulinette-obsidian-demo.git', 0,0,0, 'https://github.com/SvenWerlen/moulinette-obsidian-demo.git', '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')
-###
 ### ######################################################################
 ### ######################################################################
 ### ######################################################################
