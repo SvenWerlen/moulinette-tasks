@@ -35,51 +35,52 @@ with open(os.path.join(TMP, TASKS_FILE)) as f:
 
 if len(tasks) > 0:
   task = tasks[0]
-  blob = task["packFile"]
-  container = task["container"]
-  packName = os.path.splitext(blob)[0]
-  targetFolder = os.path.join(OUTPUT_FOLDER, container, packName)
-  if DEBUG:
-    targetFolder = os.path.join(TMP, "mtte", packName)
+  if task['type'] != 'scanGIT':
+    blob = task["packFile"]
+    container = task["container"]
+    packName = os.path.splitext(blob)[0]
+    targetFolder = os.path.join(OUTPUT_FOLDER, container, packName)
+    if DEBUG:
+      targetFolder = os.path.join(TMP, "mtte", packName)
 
-  ## Support for Michael Ghelfi
-  ## Up to 2 folders => category
-  if container == "michaelghelfi":
-    logger.info("[ProcessMeta] Generating metadata for Michael Ghelfi")
-  
-    allSounds = { 'Music': [] }
+    ## Support for Michael Ghelfi
+    ## Up to 2 folders => category
+    if container == "michaelghelfi":
+      logger.info("[ProcessMeta] Generating metadata for Michael Ghelfi")
+    
+      allSounds = { 'Music': [] }
 
-    metadataPath = os.path.join(targetFolder, "metadata.json")
-    if os.path.exists(metadataPath):
-      logger.warn(f"[ProcessMeta] Metadata file already exists in pack {blob}")
-    else:
-      try:
-        audios = {}
-        with open(os.path.join(targetFolder, "audioInfo.json")) as f:
-          audios = json.load(f)
+      metadataPath = os.path.join(targetFolder, "metadata.json")
+      if os.path.exists(metadataPath):
+        logger.warn(f"[ProcessMeta] Metadata file already exists in pack {blob}")
+      else:
+        try:
+          audios = {}
+          with open(os.path.join(targetFolder, "audioInfo.json")) as f:
+            audios = json.load(f)
 
-        for path in audios.keys():
-          categs = []
-          folders = path.split("/")
-          if len(folders) > 2:
-            categs.append(folders[0].lower())
-          if len(folders) > 3:
-            categs.append(folders[1].lower())
-          # hot fix : Any should be "basic"
-          if "any" in categs:
-            categs.remove("any")
-            categs.push("basic")
+          for path in audios.keys():
+            categs = []
+            folders = path.split("/")
+            if len(folders) > 2:
+              categs.append(folders[0].lower())
+            if len(folders) > 3:
+              categs.append(folders[1].lower())
+            # hot fix : Any should be "basic"
+            if "any" in categs:
+              categs.remove("any")
+              categs.push("basic")
+            
+            allSounds['Music'].append({
+              'path': path,
+              'categ': categs
+            })
           
-          allSounds['Music'].append({
-            'path': path,
-            'categ': categs
-          })
-        
-        logger.info(f"Storing metadata for {len(audios)} entries ...")
-        out_file = open(metadataPath, "w")
-        json.dump(allSounds, out_file)
+          logger.info(f"Storing metadata for {len(audios)} entries ...")
+          out_file = open(metadataPath, "w")
+          json.dump(allSounds, out_file)
 
-      except Exception as e:
-        logger.error("[ProcessMeta] Exception raised during processing")
-        logger.error(e)
-        pass
+        except Exception as e:
+          logger.error("[ProcessMeta] Exception raised during processing")
+          logger.error(e)
+          pass

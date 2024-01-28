@@ -16,6 +16,7 @@ from time import time
 from urllib.parse import unquote
 from processTasksScenePacker import *
 from processTasksElastic import *
+from processTasksScanGIT import *
 from moulinette_utils.storage.s3 import MoulinetteStorageS3
 
 logger = logging.getLogger(__name__)
@@ -630,7 +631,7 @@ if len(tasks) > 0:
                 os.system("mkdir -p '%s'" % folder)
                 with open(os.path.join(folder, filename + ".json"), 'w') as out:
                   json.dump(data, out)
-          
+
           ###
           ### PRE PROCESSING #2b
           ### - store all extracted assets (for MongoDB)
@@ -1093,6 +1094,19 @@ if len(tasks) > 0:
       print("[ProcessTask] Exception during processing")
       traceback.print_exception(type(e), e, e.__traceback__)
       task["status"] = "failed"
+
+  ############################################################################################################################
+  ################################## TASK ScanGIT ############################################################################
+  ############################################################################################################################
+  if task["type"] == "scanGIT":
+    if processScanGIT(task["packFile"]):
+      task["status"] = "done"
+    else:
+      task["status"] = "failed"
+
+    if DEBUG:
+      print("Stopping because of DEBUG")
+      exit(0)
 
 # write statuses
 with open(os.path.join(TMP, TASKS_STATUS), "w") as outfile:

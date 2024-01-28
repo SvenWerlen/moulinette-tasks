@@ -41,7 +41,7 @@ with open(os.path.join(TMP, TASKS_STATUS)) as f:
 if len(tasks) > 0:
   task = tasks[0]
   
-  if task["status"] and task["status"] == "done":
+  if task["status"] and task["status"] == "done" and task["type"] != "scanGIT":
     logger.info(f'Updating DB for {task["packFile"]} from task {task["id"]}')
     
     packName = os.path.splitext(task["packFile"])[0]
