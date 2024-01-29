@@ -42,7 +42,7 @@ if len(tasks) > 0:
   else:
     status = "FAIL"
     
-  packFile = task["packFile"].spit("#")[0] # don't make token visible
+  packFile = task["packFile"].split("#")[0] # don't make token visible
   content = {"username": "Tasks", "content": "[**%s**] #%d   **%s** (type)   **%s** (pack)   **%s** (container).\n*%s*" % (status, task["id"], task["type"], packFile, task["container"], details)}
 
   requests.post(url, data = content)
