@@ -45,6 +45,11 @@ def processScanGIT(repo):
 
   os.system("rm -rf '%s'" % GIT_FOLDER)
   try:
+    # repo could end with token #...
+    data = repo.split("#")
+    if len(data) == 2:
+      token = data[1]
+      repo = data[0].replace("https://github.com", f"https://{token}@github.com")
     git.Repo.clone_from(repo, GIT_FOLDER)
   except Exception as e:
     logger.error(f"Cannot clone GIT repo : {repo}")
