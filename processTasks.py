@@ -567,6 +567,8 @@ if len(tasks) > 0:
                 continue
               
               filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
+              if "_id" in data:
+                filename += f'-{data["_id"]}'
               folder = None
 
               # special case (dummy entity)
