@@ -567,8 +567,6 @@ if len(tasks) > 0:
                 continue
               
               filename = re.sub('[^0-9a-zA-Z]+', '-', data["name"]).lower()
-              if "_id" in data:
-                filename += f'-{data["_id"]}'
               folder = None
 
               # special case (dummy entity)
@@ -631,6 +629,13 @@ if len(tasks) > 0:
 
               if folder:
                 os.system("mkdir -p '%s'" % folder)
+                # make sure file doesn't exist yet
+                if os.path.exists(os.path.join(folder, filename + ".json")):
+                  for number in range(2,99):
+                    if not os.path.exists(os.path.join(folder, f'{filename}-{number}.json')):
+                      filename = os.path.join(folder, f'{filename}-{number}.json')
+                      break
+                
                 with open(os.path.join(folder, filename + ".json"), 'w') as out:
                   json.dump(data, out)
 
