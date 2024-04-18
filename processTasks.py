@@ -632,7 +632,7 @@ if len(tasks) > 0:
                 # make sure file doesn't exist yet
                 if os.path.exists(os.path.join(folder, filename + ".json")):
                   for number in range(1,99):
-                    if not os.path.exists(os.path.join(folder, f'{filename}-{number}.json')):
+                    if not os.path.exists(os.path.join(folder, f'{filename}-alt{number}.json')):
                       filename = f'{filename}-alt{number}'
                       break
                 
