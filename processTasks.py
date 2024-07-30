@@ -528,16 +528,18 @@ if len(tasks) > 0:
                     if "name" in entry:
                       entries.append(entry)
               else:
-                print(f"Skipping {p['path']} which doesn't exist")
+                print(f"Skipping {p['path']} which doesn't exist. Testing LevelDB format...")
+                p["path"] = p["path"][:-3] # check if pack is in LevelDB format
                 
             # pack is in LevelDB format
-            else:
+            if "path" in p and not p["path"].endswith(".db"):
               # remove first "/" (if any to avoid absolute paths)
               if p["path"].startswith("/"):
                 p["path"] = p["path"][1:]
 
               try:
                 db = plyvel.DB(os.path.join(tmppath, dir, p["path"]), create_if_missing=False)
+                print("Database loaded: " + p["path"])
                 for key, value in db:
                   entry = json.loads(value)
                   if "name" in entry:
