@@ -109,3 +109,4 @@ if len(tasks) > 0:
 
       # Delete all temp files
       shutil.rmtree(folderPath)
+      shutil.rmtree(os.path.join(PREVIEW_FOLDER, task["container"]))
