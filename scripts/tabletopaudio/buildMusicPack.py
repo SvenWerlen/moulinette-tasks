@@ -5,10 +5,10 @@ import logging
 import requests
 import urllib.request
 
-START = 301
+START = 401
 OUTPUT = "/home/sven/Téléchargements"
 URL = "https://tabletopaudio.com/tta_data"
-DEF_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.74 Safari/537.36 Edg/79.0.309.43"
+DEF_USER_AGENT = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0"
 
 # logging information
 logging.basicConfig(
@@ -24,8 +24,21 @@ opener.addheaders = [('User-agent', DEF_USER_AGENT)]
 urllib.request.install_opener(opener)
 
 logger.info("Reading list TTA website ...")
-headers = {'User-Agent': DEF_USER_AGENT}
+headers = {
+  'User-Agent': DEF_USER_AGENT,
+  'Referer': "https://tabletopaudio.com/",
+  'Accept': "audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5",
+  'Accept-Encoding': 'identity',
+  'Accept-Language': 'fr-CA,fr;q=0.8,en-US;q=0.5,en;q=0.3',
+  'Alt-Used': 'sounds.tabletopaudio.com',
+  'Cache-Control': 'no-cache',
+  'Sec-Fetch-Dest': 'audio',
+  'Sec-Fetch-Mode': 'no-cors',
+  'Sec-Fetch-Site': 'same-site'
+}
+
 response = requests.get(URL, headers=headers)
+
 if response.status_code != 200:
   logger.error("Couldn't download the metadata!")
   exit(1)
@@ -61,9 +74,17 @@ for sound in data["tracks"]:
   filename = sound["link"].split("/").pop()
   targetFile = os.path.join(targetFolder, filename)
   if not os.path.exists(targetFile):
-    logger.info(f"Downloading {filename}...")
-    urllib.request.urlretrieve(sound["link"], filename)
-    os.rename(filename, targetFile)
+    logger.info(f"Downloading {filename}... {sound['link']}")
+
+    req = urllib.request.Request(sound["link"])
+    for h in headers.keys():
+      req.add_header(h, headers[h])
+
+    resp = urllib.request.urlopen(req).read()
+    with open(targetFile, 'b+w') as f:
+      f.write(resp)
+
+    #os.rename(filename, targetFile)
 
   # fix track genre
   categ = []
