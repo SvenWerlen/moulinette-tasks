@@ -1,6 +1,5 @@
 #!/bin/bash
 source environment.sh
-source {{ venv_path }}/bin/activate
 
 DEBUG=$1
 
