@@ -155,9 +155,9 @@ if len(tasks) > 0:
         ### - remove all __MACOSX folders
         ### - remove all files larger than 20 MB
         ###
-        os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
-        os.system("find '%s' -type f -name '.*' -exec rm -f {} \;" % tmppath)
-        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -f {} \;" % tmppath)
+        os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \\;" % tmppath)
+        os.system("find '%s' -type f -name '.*' -exec rm -f {} \\;" % tmppath)
+        os.system("find '%s' -type f \\( -iname \\*.jpg -o -iname \\*.png -o -iname \\*.jpeg \\) -size +20M -exec rm -f {} \\;" % tmppath)
 
         ###
         ### IMAGE CONVERSION
@@ -165,7 +165,7 @@ if len(tasks) > 0:
         ### - generates thumbnails
         ###
         secs = time()
-        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
+        os.system("find '%s' -type f \\( -iname \\*.jpg -o -iname \\*.png -o -iname \\*.jpeg \\) -execdir mogrify -format webp -quality 60 {} \\;" % tmppath)
         print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
         log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
 
@@ -322,7 +322,7 @@ if len(tasks) > 0:
 
         # delete original files, rename webp files and remove all non-supported files
         secs = time()
-        os.system("find '%s' -type f -not -iname \*.json -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -exec rm '{}' \;" % tmppath)
+        os.system("find '%s' -type f -not -iname \\*.json -not -iname \\*.svg -not -iname \\*.webp -not -iname \\*.webm -not -iname \\*.mp4 -not -iname \\*.ogg -not -iname \\*.mp3 -exec rm '{}' \\;" % tmppath)
         print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
         log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
@@ -413,7 +413,7 @@ if len(tasks) > 0:
         ### - remove all hidden/secret files
         ### - remove all files larger than 20 MB
         ###
-        os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \;" % tmppath)
+        os.system("find '%s' -name '__MACOSX' -exec rm -rf {} \\;" % tmppath)
 
         for root, dirs, files in os.walk(tmppath):
           for file in files:
@@ -423,8 +423,8 @@ if len(tasks) > 0:
             if oldPath != newPath:
               os.rename(oldPath, newPath)
 
-        os.system("find '%s' -type f -name '.*' -exec rm -f {} \;" % tmppath)
-        os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -size +20M -exec rm -rf {} \;" % tmppath)
+        os.system("find '%s' -type f -name '.*' -exec rm -f {} \\;" % tmppath)
+        os.system("find '%s' -type f \\( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \\) -size +20M -exec rm -rf {} \\;" % tmppath)
 
 
         ###
@@ -680,7 +680,7 @@ if len(tasks) > 0:
           ### - generates thumbnails
           ###
           secs = time()
-          os.system("find '%s' -type f \( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \) -execdir mogrify -format webp -quality 60 {} \;" % tmppath)
+          os.system("find '%s' -type f \\( -iname \\*.jpg -o -iname \\*.png -o -iname \\*.jpeg \\) -execdir mogrify -format webp -quality 60 {} \\;" % tmppath)
           print("[ProcessTask] Conversion to webp in %.1f seconds" % (time() - secs))
           log += "Conversion to webp in %.1f seconds\n" % (time() - secs)
 
@@ -1002,7 +1002,7 @@ if len(tasks) > 0:
 
           # delete original files, rename webp files and remove all non-supported files
           secs = time()
-          os.system("find '%s' -type f -not -iname \*.svg -not -iname \*.webp -not -iname \*.webm -not -iname \*.mp4 -not -iname \*.ogg -not -iname \*.mp3 -not -iname \*.wav -not -iname \*.json -not -iname \*.pdf -exec rm '{}' \;" % tmppath)
+          os.system("find '%s' -type f -not -iname \\*.svg -not -iname \\*.webp -not -iname \\*.webm -not -iname \\*.mp4 -not -iname \\*.ogg -not -iname \\*.mp3 -not -iname \\*.wav -not -iname \\*.json -not -iname \\*.pdf -exec rm '{}' \\;" % tmppath)
           print("[ProcessTask] Cleanup in %.1f seconds" % (time() - secs))
           log += "Cleanup in %.1f seconds\n" % (time() - secs)
 
