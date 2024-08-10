@@ -249,7 +249,7 @@ if len(tasks) > 0:
                 content = f.read().replace('\n', '')
 
                 # make sure that all assets are in webp format
-                content = re.sub(r'"(#DEP[^"]*).(?:png|jpg|gif|jpeg)"', '"\g<1>.webp"', content)
+                content = re.sub(r'"(#DEP[^"]*).(?:png|jpg|gif|jpeg)"', '"\\g<1>.webp"', content)
 
                 data = json.loads(content)
                 backgroundImage = None
@@ -424,7 +424,7 @@ if len(tasks) > 0:
               os.rename(oldPath, newPath)
 
         os.system("find '%s' -type f -name '.*' -exec rm -f {} \\;" % tmppath)
-        os.system("find '%s' -type f \\( -iname \*.jpg -o -iname \*.png -o -iname \*.jpeg \\) -size +20M -exec rm -rf {} \\;" % tmppath)
+        os.system("find '%s' -type f \\( -iname \\*.jpg -o -iname \\*.png -o -iname \\*.jpeg \\) -size +20M -exec rm -rf {} \\;" % tmppath)
 
 
         ###
@@ -828,7 +828,7 @@ if len(tasks) > 0:
 
                     # REPLACE all images paths from PNG/JPG to WebP
                     # make sure that all assets are in webp format
-                    content = re.sub(r'"(#DEP[^"]*).(?:png|jpg)', '"\g<1>.webp', content)
+                    content = re.sub(r'"(#DEP[^"]*).(?:png|jpg)', '"\\g<1>.webp', content)
 
                     with open(os.path.join(root, file), "w") as fw:
                       fw.write(content)
@@ -856,7 +856,7 @@ if len(tasks) > 0:
                         rootFolder = root[0:idx] if idx >= 0 else root
                         imagePath = unquote(os.path.join(rootFolder, backgroundImage.replace("#DEP#", "")))
                         # copy background image file near json file (required to match with thumbnail)
-                        if re.match("#DEP\d#", backgroundImage):
+                        if re.match("#DEP\\d#", backgroundImage):
                           print("[ProcessTask] Thumbnail is not possible from external pack: %s" % backgroundImage)
                           image = imagePath
                         elif os.path.isfile(imagePath):
@@ -878,7 +878,7 @@ if len(tasks) > 0:
                         continue
 
                     # if image path depends on another pack => don't generate thumbnail (assume it was done)
-                    imgExternal = re.match("#DEP\d#", backgroundImage) if backgroundImage else None
+                    imgExternal = re.match("#DEP\\d#", backgroundImage) if backgroundImage else None
                     if imgExternal or os.path.isfile(image):
                       print("[ProcessTask] - Scene %s ... " % file)
                       log += "- Scene %s ...\n" % file
